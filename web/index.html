@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+    <link rel="stylesheet" href="css/bootstrap.css" type="text/css">
+    <script src="js/jquery-2.2.3.min.js"></script>
+    <link rel="stylesheet" href="css/ol.css" type="text/css">
+    <script src="js/ol.js"></script>
+    <script src="js/map.js"></script>
+    <style>
+        head,body{
+            width: 100%;
+            height: 100%;
+        }
+        #map{
+            width: 500px;
+            height: 600px;
+            top:0;
+            position:absolute;
+        }
+        #btnGroup{
+            top: 600px;
+            position:absolute;
+        }
+    </style>
+</head>
+<body>
+<div id="year" style='position:absolute; z-index:9999; top:0;width:500px;text-align: center;font-weight: bold;font-size: 20px;color: yellow;'></div>
+<div id="map"></div>
+<div id="btnGroup">
+    <input id="btn1" type="button" value="机构marks" onclick="addMarks('organ','机构',{lng:'113.37005764245988',lat:'23.178914710879326'})"/>
+    <input id="btn2" type="button" value="医生marks" onclick="addMarks('doctor','医生',{lng:'113.35722729563713',lat:'23.155358880758286'})"/>
+    <input id="btn3" type="button" value="疾病marks" onclick="addMarks('disease','流感',{lng:'113.41275840997696',lat:'23.14389444887638'})"/>
+    <input id="btn4" type="button" value="清除marks" onclick="cleanMarks()"/>
+    <input id="btn5" type="button" value="显示热力图" onclick="addStaticHotMap()"/>
+    <input id="btn6" type="button" value="关闭热力图" onclick="removeHotMap()"/>
+    <input id="btn7" type="button" value="轮播热力图" onclick="loopShowHotMapBegin()"/>
+    <input id="btn8" type="button" value="关闭轮播" onclick="loopShowHotMapEnd()"/>
+</div>
+<script>
+
+    var cfgs = {
+        target:'map',
+        zoom:11,
+        center:[113.335367,23.13559],
+        projection:'EPSG:4326',
+        fillColor:"#080107",
+        strokeColor:'#080107',
+        level:'street',
+        upAreaCode:'440100-1',
+        areaCode:'440106-1'
+    }
+    initMap(cfgs);
+    function addStaticHotMap(){
+        var features=[{type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
+            {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
+            {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
+            {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
+            {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
+            {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
+            {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
+            {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
+            {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
+            {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
+            {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
+            {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
+            {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
+            {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
+            {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
+            {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
+            {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
+            {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
+            {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
+            {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
+            {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
+            {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
+            {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}];
+        addHotMap(features);
+    }
+
+    var intervalFun;
+    function loopShowHotMapBegin(){
+        var heatDatas =[{
+            date:'2016年',
+            text:'流感',
+            heatData:[{
+                type: "FeatureCollection",
+                features:  [
+                    {type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
+                    {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
+                    {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
+                    {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
+                    {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
+                    {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
+                    {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
+                    {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
+                    {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
+                    {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
+                    {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
+                    {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
+                    {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
+                    {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
+                    {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
+                    {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
+                    {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
+                    {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
+                    {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
+                    {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
+                    {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
+                    {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
+                    {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}
+                ]
+            }]
+        },{
+            date:'2017年',
+            text:'流感',
+            heatData:[{
+                type: "FeatureCollection",
+                features:  [
+                    {type: "Point","coordinates": [113.40006351470947, 23.193875402212143], count: 10},
+                    {type: "Point","coordinates": [113.40668454766273, 23.18638265132904], count: 10},
+                    {type: "Point","coordinates": [113.41117456555367, 23.1967855989933], count: 10},
+                    {type: "Point","coordinates": [113.39844614267349, 23.193812370300293], count: 10},
+                ]
+            }]
+        },{
+            date:'2018年',
+            text:'流感',
+            heatData:[{
+                type: "FeatureCollection",
+                features:  [
+                    {type: "Point","coordinates": [113.3544471859932, 23.203421384096146], count: 10},
+                    {type: "Point","coordinates": [113.35447132587433, 23.22862207889557], count: 10},
+                    {type: "Point","coordinates": [113.35406497120857, 23.190349638462067], count: 10},
+                    {type: "Point","coordinates": [113.37615698575974, 23.19352000951767], count: 10},
+                ]
+            }]
+        },{
+            date:'2019年',
+            text:'流感',
+            heatData:[{
+                type: "FeatureCollection",
+                features:  [
+                    {type: "Point","coordinates": [113.34618732333183, 23.161409944295883], count: 10},
+                    {type: "Point","coordinates": [113.36334809660912, 23.162637054920197], count: 10}
+                ]
+            }]
+        }];
+
+        intervalFun = setInterval(function(){
+            loopShowHotMap(heatDatas)
+        },2000);
+
+    }
+    function loopShowHotMapEnd(){
+        if(intervalFun){
+            clearInterval(intervalFun);
+            intervalFun=undefined;
+        }
+    }
+
+</script>
+</body>
+</html>
