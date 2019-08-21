@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/ol.css" type="text/css">
     <script src="js/ol.js"></script>
     <script src="js/map.js"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=e2e63e4803357b9f623f59282a3a691b&plugin=AMap.Driving,AMap.Walking"></script>
     <style>
         head,body{
             width: 100%;
@@ -37,7 +38,19 @@
     <input id="btn6" type="button" value="关闭热力图" onclick="removeHotMap()"/>
     <input id="btn7" type="button" value="轮播热力图" onclick="loopShowHotMapBegin()"/>
     <input id="btn8" type="button" value="关闭轮播" onclick="loopShowHotMapEnd()"/>
+    <input id="btn9" type="button" value="开启自定义框定区域" onclick="openDefinedDraw()"/>
+    <input id="btn10" type="button" value="关闭自定义框定区域" onclick="closeDraw()"/>
+    <input id="btn13" type="button" value="test" onclick="getPolyRange()"/>
+
+    <div>
+        城市：<input id="searchCity" type="text" value="广州" disabled="disabled"/></br></br>
+        起点：<input id="beginAddress" type="text" value="广州东站"/>-终点<input id="endAddress" type="text" value="华南植物园"/>
+        <input id="btn11" type="button" value="驾车" onclick="searchPath('driver')"/>
+        <input id="btn12" type="button" value="步行" onclick="searchPath('walk')"/>
+    </div>
 </div>
+
+<div id="container" style="display: none;"></div>
 <script>
 
     var cfgs = {
@@ -51,7 +64,7 @@
         upAreaCode:'440100-1',
         areaCode:'440106-1'
     }
-    initMap(cfgs);
+    var olMap = initMap(cfgs);
     function addStaticHotMap(){
         var features=[{type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
             {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
@@ -158,6 +171,136 @@
             clearInterval(intervalFun);
             intervalFun=undefined;
         }
+    }
+    function openDefinedDraw() {
+        var cfgs = {
+            layerStyle:{
+                fillColor:'rgba(94, 110, 202, 0.5)',
+                strokeColor:'#CCA30B',
+                strokeWidth:2,
+                imageRadius:7,
+                imageColor:'red'
+            },
+            drawStyle:{
+                type:'Polygon',//Circle,Polygon
+                fillColor:'rgba(72,61,139, 0.4)',
+                strokeColor:'rgba(0, 0, 0, 0.5)',
+                strokeLineDash:[10, 10],
+                strokeWidth:2,
+                imageRadius:5,
+                imageStrokeColor:'rgba(0, 0, 0, 0.7)',
+                imageFillColor:'green',
+                maxPoints:2
+            }
+        }
+        openDraw(cfgs);
+    }
+
+    function addLine(){
+
+        addLineString('organ','机构',[{lng:'113.37005764245988',lat:'23.178914710879326'},{lng:'113.35722729563713',lat:'23.155358880758286'},{lng:'113.41275840997696',lat:'23.14389444887638'}]);
+    }
+
+    function searchPath(type){
+        debugger;
+        var searchCity = $('#searchCity').val();
+        var beginAddress = $('#beginAddress').val();
+        var endAddress = $('#endAddress').val();
+        if(!searchCity || !beginAddress || !endAddress){
+            log.error('请输入值');
+            return;
+        }
+        var map = new AMap.Map("container", {
+            resizeEnable: true,
+            center: [113.3612,23.12468],//地图中心点
+            zoom: 13 //地图显示的缩放级别
+        });
+        //构造路线导航类
+        var mapPath;
+        switch (type){
+            case 'walk':
+                mapPath = new AMap.Walking({
+                    map: map
+                });
+                break;
+            case 'driver':
+                mapPath = new AMap.Driving({
+                    map: map
+                });
+                break;
+            default:
+                mapPath =new AMap.Driving({
+                    map: map
+                });
+                break;
+        }
+
+        var searchCfgs = [
+            {keyword: beginAddress,city:searchCity},
+            {keyword: endAddress,city:searchCity}
+        ];
+        var me = this;
+        // 根据起终点经纬度规划驾车导航路线
+        mapPath.search(searchCfgs, function(status, result) {
+            debugger;
+            if (status === 'complete') {
+                var startF = new ol.Feature(new ol.geom.Point([result.start.location.lng, result.start.location.lat]));
+                startF.name = result.start.name;
+                setPointStyle(startF,{
+                    imageFillColor:'green',
+                    strokeColor:'#8f8f8f',
+                    textFillColor:'white'
+                });
+                var endF = new ol.Feature(new ol.geom.Point([result.end.location.lng, result.end.location.lat]));
+                endF.name = result.end.name;
+                setPointStyle(endF,{
+                    imageFillColor:'red',
+                    strokeColor:'#8f8f8f',
+                    textFillColor:'white'
+                });
+                features = [startF, endF];
+                var routes = result.routes;
+                for(var i=0;i<routes.length;i++){
+                    var _route = routes[i];
+                    var steps = _route.steps;
+                    if(type=='walk'){
+                        for(var j=0;j<steps.length;j++){
+                            var _step = steps[j];
+                            var path = _step.path;
+                            var _coord = [];
+                            for(var k=0;k<path.length;k++){
+                                var _path = path[k];
+                                _coord.push([_path.lng, _path.lat])
+                            }
+                            var pathF = new ol.Feature(new ol.geom.LineString(_coord));
+                            //pathF.status = tmcsPaths[m].status;
+                            setPathStyle(pathF);
+                            features.push(pathF);
+                        }
+                    }else{
+                        for(var j=0;j<steps.length;j++){
+                            var _step = steps[j];
+                            var tmcsPaths = _step.tmcsPaths;
+                            for(var m = 0;m<tmcsPaths.length;m++){
+                                var _coord = [];
+                                var path = tmcsPaths[m].path;
+                                for(var k=0;k<path.length;k++){
+                                    var _path = path[k];
+                                    _coord.push([_path.lng, _path.lat])
+                                }
+                                var pathF = new ol.Feature(new ol.geom.LineString(_coord));
+                                pathF.status = tmcsPaths[m].status;
+                                setPathStyle(pathF);
+                                features.push(pathF);
+                            }
+                        }
+                    }
+                }
+                addSearcheLayer(features,olMap);
+            } else {
+                log.error('获取驾车数据失败：' + result)
+            }
+        });
     }
 
 </script>

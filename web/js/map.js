@@ -399,3 +399,150 @@ function loopShowHotMap(heatDatas){
 //113.333413233,      23.182466375999972
 //113.33345723599999  23.18250838300003
 //113.33134008105844, 23.179395999759436
+//开启自定义框定范围
+function openDraw(cfgs) {
+    var layerStyle = cfgs?cfgs.layerStyle:{};
+    var drawStyle = cfgs?cfgs.drawStyle:{};
+    if(!this.polygonLayer){
+        this.polygonLayer=new ol.layer.Vector({
+            source:new ol.source.Vector(),
+            /*图形绘制好时最终呈现的样式,显示在地图上的最终图形*/
+            style: new ol.style.Style({
+                //内边框样式
+                fill: new ol.style.Fill({
+                    color: layerStyle.fillColor||'blue'
+                }),
+                //外边框样式
+                stroke: new ol.style.Stroke({
+                    color: layerStyle.strokeColor||'red',
+                    width: layerStyle.strokeWidth||2
+                }),
+                image: new ol.style.Circle({
+                    radius: layerStyle.imageRadius||7,
+                    fill: new ol.style.Fill({
+                        color: layerStyle.imageColor||'red'
+                    })
+                })
+            })
+        })
+        this.map.addLayer(this.polygonLayer);
+    }
+    if(!this.interaction){
+        this.interaction = new ol.interaction.Draw({
+            source: this.polygonLayer.getSource(),
+            type: drawStyle.type||'Circle', //Point 点;LineString 线;Polygon 面;Circle 圆;None 空;
+            freehand:false,//是否自由绘制意思是鼠标摁下，移动直接绘制
+            style: new ol.style.Style({
+                fill: new ol.style.Fill({
+                    // color: '#ff2feb'
+                    color:drawStyle.fillColor||"rgba(72,61,139, 0.4)"
+                }),
+                stroke: new ol.style.Stroke({
+                    color: drawStyle.strokeColor||'rgba(0, 0, 0, 0.5)',
+                    lineDash: drawStyle.strokeLineDash||[10, 10],
+                    width: drawStyle.strokeWidth||2
+                }),
+                image: new ol.style.Circle({
+                    radius: drawStyle.imageRadius||5,
+                    stroke: new ol.style.Stroke({
+                        color: drawStyle.imageStrokeColor||'rgba(0, 0, 0, 0.7)'
+                        // color: 'yellow'
+                    }),
+                    fill: new ol.style.Fill({
+                        color: drawStyle.imageFillColor||'green'
+                    })
+                }),
+                maxPoints: drawStyle.maxPoints||2
+            })
+        });
+        this.map.addInteraction(this.interaction);
+    }
+}
+function closeDraw(){
+    if(this.interaction){
+        this.map.removeInteraction(this.interaction);
+        this.interaction = null;
+    }
+    if(this.polygonLayer){
+        this.map.removeLayer(this.polygonLayer);
+        this.polygonLayer = null;
+    }
+}
+function getPolyRange(){
+    debugger;
+    var polys = [];
+    if(this.polygonLayer){
+        var features = this.polygonLayer.getSource().getFeatures();
+        features.forEach(item=>{
+            var coors = item.getGeometry().getCoordinates();
+            for(var i=0,length=coors.length;i<length-2;i++){
+
+            }
+            debugger;
+        });
+
+
+
+    }
+
+}
+//规划路线
+function addSearcheLayer(features,map){
+    this.cleanSearchLayer();
+    var vectorSource = new ol.source.Vector({
+        features: features
+    });
+    this.searchVector = new ol.layer.Vector({
+        title:'add search layer',
+        source: vectorSource,
+    });
+    map.addLayer(searchVector);
+}
+function cleanSearchLayer(){
+    if(this.searchVector){
+        this.searchVector.getSource().clear();
+        this.searchVector = null;
+    }
+}
+function setPointStyle(feature,style){
+    var name = feature.name;
+    name = name?name.substring(0,1):"";
+    var featureStyle = new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: style.imageRadius||15,
+            fill: new ol.style.Fill({
+                color:style.imageFillColor||'green'
+            })
+        }),
+        stroke: new ol.style.Stroke({
+            color: style.strokeColor||'#8f8f8f',
+            width: style.strokeWidth||5,
+//          lineDash:[10, 8]
+        }),
+        text: new ol.style.Text({
+            text: name,
+            font:"bold 15px 微软雅黑",
+            fill: new ol.style.Fill({
+                color: style.textFillColor||'white'
+            }),
+            textAlign:style.textAlign||"center",
+            textBaseline:style.textBaseline||"middle"
+        })
+    });
+    feature.setStyle(featureStyle);
+}
+function setPathStyle(feature,style){
+    var status = feature.status;
+    var _color = "#8f8f8f";
+    if(status==="拥堵")_color="#e20000";
+    else if(status==="缓行")_color="#ff7324";
+    else if(status==="畅通")_color="#00b514";
+    var featureStyle = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: _color,
+            width: 5,
+//          lineDash:[10, 8]
+        })
+    });
+    feature.setStyle(featureStyle);
+}
