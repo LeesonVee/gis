@@ -11,6 +11,9 @@ function setRootParam(cfgs){
             fillColor:cfgs.fillColor||"#080107",
             strokeColor:cfgs.strokeColor||'#080107'//#BDBDBD
         },
+        areaColor:cfgs.areaColor,
+        areaStrokeColor: cfgs.areaStrokeColor||'#4392ff',
+        areaStrokeWidth: cfgs.areaStrokeWidth||2,
         level:cfgs.level||'street',//国：country,省：province市city，区district，街道street
         // upAreaCode:'440000',
         // areaCode:'440100',
@@ -24,6 +27,13 @@ function setRootParam(cfgs){
 //钩子函数
 function fixRootParam(jsonAreaCode,cfgs){
 
+}
+function setStroke(cfg){
+    var stroke =  new ol.style.Stroke({
+        color: cfg.areaStrokeColor,
+        width: cfg.areaStrokeWidth
+    });
+    return stroke;
 }
 //label设置样式
 function addTextStyle(cfg){
@@ -58,14 +68,20 @@ function fillBgColor(color){
 }
 //加载高德地图,默认加载高德地图在线地图
 function gaodeLayers(url){
-    var layers = [
-        new ol.layer.Tile({
-            source: new ol.source.XYZ({
-                url: url||'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
-            })
+    var gdLayer =  new ol.layer.Tile({
+        source: new ol.source.XYZ({
+            url: url||'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
         })
-    ];
-    return layers;
+    });
+    this.gdLayer = gdLayer;
+    // var layers = [
+    //     new ol.layer.Tile({
+    //         source: new ol.source.XYZ({
+    //             url: url||'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
+    //         })
+    //     })
+    // ];
+    return this.gdLayer;
 }
 function addMapArea(jsonAreaCode){
     var layer = new ol.layer.Vector({
@@ -75,33 +91,34 @@ function addMapArea(jsonAreaCode){
             url: "static/data/"+jsonAreaCode.areaCode+'.json', //GeoJSON的文件路径，用户可以根据需求而改变
             format: new ol.format.GeoJSON()
         }),
-        //FIXME
         style:function (feature, resolution) {
             var areaCfg = feature.values_;
-            var color;
+            var color = jsonAreaCode.areaColor;
             if(areaCfg.name=='天河区' || areaCfg.name=='增城区'){
                 color = '#3FC012';
             }
             return new ol.style.Style({
                 fill:this.fillBgColor(color),
-                text:this.addTextStyle(areaCfg)
+                text:this.addTextStyle(areaCfg),
+                stroke:this.setStroke(jsonAreaCode)
             });
 
         }
     });
+    this.layer = layer;
     return layer;
 }
 //初始化地图
 function initMap(cfgs){
     this.jsonData,this.dataIndex;
     var jsonAreaCode = this.setRootParam(cfgs);
-    var layers = this.gaodeLayers();
-    var layer = this.addMapArea(jsonAreaCode);
-    layers.push(layer);
+    //var layers = this.gaodeLayers();
+    this.addMapArea(jsonAreaCode);
+    //layers.push(layer);
 
     var map = new ol.Map({
         target: jsonAreaCode.target,
-        layers: layers,
+        layers: [this.layer],
         view: new ol.View({
             projection: jsonAreaCode.projection,
             center: jsonAreaCode.center,
@@ -118,9 +135,9 @@ function initMap(cfgs){
     this.highlight;
     //地图绑定鼠标滑过事件
     var converLayer =this.setMyStyle(map,jsonAreaCode);
-    // map.on('pointermove', function (evt) {
-    //     me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
-    // });
+    map.on('pointermove', function (evt) {
+        me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
+    });
 
     var dataURL = './static/data/'+jsonAreaCode.upAreaCode+'.json'
     this.addconver(dataURL,converLayer,jsonAreaCode);
