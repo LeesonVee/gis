@@ -10,6 +10,8 @@
     <script src="js/element.js"></script>
     <link rel="stylesheet" href="css/bootstrap.css" type="text/css">
     <script src="js/jquery-2.2.3.min.js"></script>
+    <script type="text/javascript" src="js/ajaxrequestasync.js"></script>
+    <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
     <script src="js/bootstrap.js"></script>
     <link rel="stylesheet" href="css/ol.css" type="text/css">
     <script src="js/ol.js"></script>
@@ -76,8 +78,8 @@
                         <el-form-item label="渲染元素" prop="target">
                             <el-input v-model="form.target" @change="targetChange" onkeyup="this.value=this.value.replace(/[^\w\.\/]/ig,'');"></el-input>
                         </el-form-item>
-                        <el-form-item label="显示级别" prop="level" style="text-align: left;">
-                            <el-select v-model="form.level"  placeholder="请选择最大显示级别">
+                        <el-form-item label="显示级别" prop="levels" style="text-align: left;">
+                            <el-select v-model="form.levels"  placeholder="请选择最大显示级别">
                                 <el-option label="省级" value="province"></el-option>
                                 <el-option label="市级" value="city"></el-option>
                                 <el-option label="区级" value="district"></el-option>
@@ -94,7 +96,7 @@
                                     </el-form-item>
                                 </el-col>
                             </div>
-                            <div v-if="form.level!=='province'">
+                            <div v-if="form.levels!=='province'">
                                 <el-col class="line" :span="1">-</el-col>
                                 <el-col :span="7">
                                     <el-form-item prop="city">
@@ -104,7 +106,7 @@
                                     </el-form-item>
                                 </el-col>
                             </div>
-                            <div v-if="form.level == 'district' || form.level == 'street'">
+                            <div v-if="form.levels == 'district' || form.levels == 'street'">
                                 <el-col class="line" :span="1">-</el-col>
                                 <el-col :span="7">
                                     <el-form-item prop="district">
@@ -176,8 +178,16 @@
                                 </el-form-item>
                             </el-col>
                         </el-form-item>
+                        <el-form-item label="添加事件" style="text-align: left;">
+                            <el-checkbox-group v-model="form.events">
+                                <el-checkbox label="singleClick" key="singleClick">单击</el-checkbox>
+                                <el-checkbox label="pointermove" key="pointermove">鼠标滑过</el-checkbox>
+                                <el-checkbox label="moveend" key="moveend">缩放</el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
                         <el-form-item style="text-align: left;">
-                            <el-button type="primary" @click="submitForm('form')">立即创建</el-button>
+                            <el-button type="primary" @click="submitForm('form','create')">创建地图</el-button>
+                            <el-button type="success" @click="submitForm('form','save')">保存地图</el-button>
                             <el-button @click="resetForm('form')">重置</el-button>
                         </el-form-item>
                     </el-form>
@@ -188,31 +198,32 @@
     </el-container>
 </div>
 <script type="text/javascript">
-    function test(){
-        alert('this test funciton');
-    }
+    var apiRootPath='http://10.32.0.169:8120/hub/';
+    var path = 'http://10.32.0.169:8140/gis/';
     new Vue({
         el: '#app',
         data:{
+            pkey:'',
             activeName:'systemBase',
             form:{
                 name:'',
                 target:'map',
-                level:'district',
+                levels:'district',
                 province:'',
                 city:'',
                 district:'',
-                lng:'',
-                lat:'',
+                lng:'113.335367',
+                lat:'23.13559',
                 zoom:'',
                 projection:'EPSG:4326',
                 otherMap:0,
                 mapType:'gaode',
-                fillColor:'rgba(19, 206, 102, 0.8)',
+                fillColor:'rgba(0, 0, 0, 1)',
                 strokeColor:'#080107',
-                areaColor:'rgba(76, 76, 190, 0.59)',
-                areaStrokeColor:'#ccc071',
-                areaStrokeWidth:2
+                areaColor:'rgba(17, 30, 88, 1)',
+                areaStrokeColor:'rgba(67, 231, 249, 1)',
+                areaStrokeWidth:2,
+                events:[]
             },
             rules:{
                 name: [
@@ -222,7 +233,7 @@
                 target:[
                     { required: true, message: '渲染元素不能为空', trigger: 'change' }
                 ],
-                level:[
+                levels:[
                     { required: true, message: '显示级别不能为空', trigger: 'change' }
                 ],
                 province:[
@@ -269,28 +280,45 @@
             mapCfgs:{
                 baseInfo:{},
                 styleInfo:{}
-            }
+            },
+            showMap:false
+
         },
         methods:{
             targetChange:function(val){
                 $('#'+val).html('');
             },
-            submitForm:function(formName) {
+            submitForm:function(formName,type) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
-                       this.getMapCfgs();
-                       var cfgs = this.mapCfgs.baseInfo;
-                       for(var p in this.mapCfgs.styleInfo){
-                           cfgs[p] = this.mapCfgs.styleInfo[p];
-                       }
-                       initMap(cfgs);
+                        this.getMapCfgs();
+                        var cfgs = this.mapCfgs.baseInfo;
+                        for(var p in this.mapCfgs.styleInfo){
+                            cfgs[p] = this.mapCfgs.styleInfo[p];
+                        }
+                        if(type=='create'){
+                            initMap(cfgs);
+                            this.showMap = true;
+                        }else if(type='save'){
+                            if(!this.showMap){
+                                initMap(cfgs);
+                            }
+                            var params = this.mapCfgs;
+                            params['name'] = this.form.name;
+                            if(this.pkey!=''){
+                                params['id'] = this.pkey;
+                            }
+                            this.saveGisData('POST',apiRootPath+'map/saveMapData.html',params);
+                        }
                     } else {
                         return false;
                     }
                 });
             },
             resetForm:function(formName) {
+                debugger;
                 this.$refs[formName].resetFields();
+                this.form.events=[];
                 this.resetMapCfgs();
             },
             getMapCfgs:function(){
@@ -301,17 +329,17 @@
                 this.mapCfgs.baseInfo['center']=[form.lng,form.lat];
                 this.mapCfgs.baseInfo['zoom']=form.zoom;
                 this.mapCfgs.baseInfo['projection']=form.projection;
-                this.mapCfgs.baseInfo['level']=form.level;
-                if(form.level=='province'){
+                this.mapCfgs.baseInfo['levels']=form.levels;
+                if(form.levels=='province'){
                     this.mapCfgs.baseInfo['upAreaCode']='100000';
                     this.mapCfgs.baseInfo['areaCode']=form.province;
-                }else if(form.level=='city'){
+                }else if(form.levels=='city'){
                     this.mapCfgs.baseInfo['upAreaCode']=form.province;
                     this.mapCfgs.baseInfo['areaCode']=form.city;
-                }else if(form.level=='district'){
+                }else if(form.levels=='district'){
                     this.mapCfgs.baseInfo['upAreaCode']=form.city;
                     this.mapCfgs.baseInfo['areaCode']=form.district;
-                }else if(form.level=='street'){
+                }else if(form.levels=='street'){
                     this.mapCfgs.baseInfo['upAreaCode']=form.city+'-1';
                     this.mapCfgs.baseInfo['areaCode']=form.district+'-1';
                 }
@@ -319,11 +347,95 @@
                 this.mapCfgs.baseInfo['areaColor']=form.areaColor;
                 this.mapCfgs.baseInfo['areaStrokeColor']=form.areaStrokeColor;
                 this.mapCfgs.baseInfo['areaStrokeWidth']=form.areaStrokeWidth;
+                this.mapCfgs.baseInfo['events']=form.events;
             },
             resetMapCfgs:function(){
                 $('#'+this.form.target).html('');
                 this.mapCfgs.baseInfo={};
                 this.mapCfgs.styleInfo={};
+            },
+            rquestParams:function(method,api,data){
+                var jsonDataList={
+                    httpMethod:method,
+                    url:api,
+                    data:data?JSON.stringify(data):''
+                };
+                return jsonDataList;
+            },
+            saveGisData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.pkey = json.body;
+                        me.myMessage('恭喜您，保存成功!','success');
+                        me.createHtmlTemplet();
+                    }else{
+                        me.myMessage('保存失败，请稍后再试!','error');
+                    }
+                });
+            },
+            /**
+             * msg：提示信息
+             * type：消息类型：success：成功；error：错误；warning：警告；
+             * */
+            myMessage:function(msg,type) {
+                this.$message({
+                    message: msg,
+                    type: type
+                });
+            },
+            createHtmlTemplet:function(){
+                var html='<!DOCTYPE html>'
+                              +'<html lang="en">'
+                              +'<head>'
+                              +'    <meta charset="UTF-8">'
+                              +'    <title>GIS</title>'
+                              +'    <link rel="stylesheet" href="../css/bootstrap.css" type="text/css">'
+                              +'    <link rel="stylesheet" href="../css/ol.css" type="text/css">'
+                              +'    <script type="text/javascript" src="../js/ajaxrequestasync.js"></s'+ 'cript>'
+                              +'    <script type="text/javascript" src="../js/ajaxrequestsync.js"></s'+ 'cript>'
+                              +'    <script src="../js/jquery-2.2.3.min.js"></s'+ 'cript>'
+                              +'    <script src="../js/bootstrap.js"></s'+ 'cript>'
+                              +'    <script src="../js/ol.js"></s'+ 'cript>'
+                              +'    <script src="../js/map.js"></s'+ 'cript>'
+                              +'    <style type="text/css">head,body{width: 100%;height: 100%;}</style>'
+                              +'</head>'
+                              +'<body>'
+                              +'    <div id="map" style="width: 100%;height: 100%;"></div>'
+                              +'<script type="text/javascript">'
+                              +'    var apiRootPath="'+apiRootPath+'";'
+                              +'    var path = "'+path+'";'
+                              +'    var jsonDataList ={httpMethod:"POST",url:"'+apiRootPath+'map/getMapByPkey.html",data:JSON.stringify({ID:"2805a1559c8c42caaa7f"})};'
+                              +'    ajaxrequestasync(jsonDataList,function(code,msg,json){if(code=="200"){var body = json.body;var baseInfo = JSON.parse(body.BASE_INFO);var styleInfo = JSON.parse(body.STYLE_INFO);var cfgs = baseInfo;for(var p in styleInfo){cfgs[p] = styleInfo[p];}initMap(cfgs);}});'
+                              +'</s'+'cript>'
+                              +'</body>'
+                              +'</html>';
+                html=html.replace(/%/g,'%25');//将百分号转义
+                var fileName='GIS_'+this.pkey;
+                var fileType="html";
+                var fileInfor={
+                    fileName:fileName,
+                    fileType:fileType,
+                    data:html,
+                }
+                var fileJsonData=this.rquestParams('POST',apiRootPath+'map/createFile.html',fileInfor);
+                var me = this;
+                ajaxrequestasync(fileJsonData,function(code,msg,json){
+                    if(code=='200'){
+                        var templateUrl=json.body;
+                        me.$alert('保存成功，模板路径：'+templateUrl, '提示', {
+                            confirmButtonText: '确定',
+                        });
+                    }else{
+                        me.$message({
+                            showClose: true,
+                            type: 'error',
+                            message: '模板文件生成失败！',
+                            duration:1500
+                        });
+                    }
+                })
             }
         }
     });

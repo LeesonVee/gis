@@ -14,7 +14,8 @@ function setRootParam(cfgs){
         areaColor:cfgs.areaColor,
         areaStrokeColor: cfgs.areaStrokeColor||'#4392ff',
         areaStrokeWidth: cfgs.areaStrokeWidth||2,
-        level:cfgs.level||'street',//国：country,省：province市city，区district，街道street
+        events: cfgs.events||[],
+        levels:cfgs.levels||'street',//国：country,省：province市city，区district，街道street
         // upAreaCode:'440000',
         // areaCode:'440100',
         //到街道数据必须以code+'-1'方式命名
@@ -48,13 +49,13 @@ function addTextStyle(cfg){
         text: cfg.name||'',
         //填充样式
         fill: new ol.style.Fill({
-            color: cfg.fillColor||'#aa3300'
+            color: cfg.fillColor||'#FFFFFF'
         }),
         //笔触
-        stroke: new ol.style.Stroke({
-            color: cfg.strokeColor||'#ffcc33',
-            width: cfg.strokeWidth||2
-        })
+        // stroke: new ol.style.Stroke({
+        //     color: cfg.strokeColor||'#FFFFFF',
+        //     width: cfg.strokeWidth||2
+        // })
     });
     return text;
 }
@@ -88,7 +89,7 @@ function addMapArea(jsonAreaCode){
         title: 'add Layer',
         source: new ol.source.Vector({
             projection: 'EPSG:4326',
-            url: "static/data/"+jsonAreaCode.areaCode+'.json', //GeoJSON的文件路径，用户可以根据需求而改变
+            url: path+"static/data/"+jsonAreaCode.areaCode+'.json', //GeoJSON的文件路径，用户可以根据需求而改变
             format: new ol.format.GeoJSON()
         }),
         style:function (feature, resolution) {
@@ -125,24 +126,94 @@ function initMap(cfgs){
             zoom: jsonAreaCode.zoom
         })
     });
-
-    var me = this;
-    //地图绑定单机事件
-    map.on('singleclick', function (evt) {
-        me.singleClick(evt);
-    });
-    var featureOverlay = this.featureOverlay(map);
-    this.highlight;
-    //地图绑定鼠标滑过事件
-    var converLayer =this.setMyStyle(map,jsonAreaCode);
-    map.on('pointermove', function (evt) {
-        me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
-    });
-
-    var dataURL = './static/data/'+jsonAreaCode.upAreaCode+'.json'
-    this.addconver(dataURL,converLayer,jsonAreaCode);
+    this.setMyStyle(map,jsonAreaCode);
+    this.addEvent(jsonAreaCode,map);
+    var dataURL = path+'static/data/'+jsonAreaCode.upAreaCode+'.json'
+    this.addconver(dataURL,jsonAreaCode);
     this.map = map;
     return this.map;
+}
+function addEvent(jsonAreaCode,map){
+    if(!jsonAreaCode.events || jsonAreaCode.events.length==0){
+        return;
+    }
+    var me = this;
+    jsonAreaCode.events.forEach(event=>{
+        if(event=='singleclick'){
+            map.on(eventName, function (evt) {
+                //地图绑定单击事件
+                me.singleClick(evt);
+            });
+        }else if(event=='pointermove'){
+            var converLayer = this.converLayer;
+            var featureOverlay = this.featureOverlay(map);
+            //地图绑定鼠标滑过事件
+            map.on(event, function (evt) {
+                me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
+            });
+        }else if(event=='moveend'){
+            var addPointStatus = false;
+            var params = {
+                areaCode:jsonAreaCode.areaCode
+            };
+            var jsonDataList ={
+                httpMethod:'POST',
+                url:apiRootPath+'map/getOrganInfoByAreaCode.html',
+                data:JSON.stringify(params)
+            }
+            ajaxrequestasync(jsonDataList,function(code,msg,json){
+                if(code=='200'){
+                    map.on(event,function(e){
+                        var zoom = map.getView().getZoom();  //获取当前地图的缩放级别
+                        if(zoom >= 13){
+                            if(!addPointStatus){
+                                console.log('添加点标记');
+                                json.body.forEach(item=>{
+                                    me.addPoint(item.LNG,item.LAT,item.MARK_NAME);
+                                });
+                                addPointStatus = true;
+                            }
+                        }else{
+                            if(addPointStatus){
+                                me.layer.getSource().clear();   //控制地图图层不可见
+                                addPointStatus = false;
+                            }
+                        }
+                    });
+                }
+            });
+
+        }
+    });
+    // var addPointStatus = false;
+    // var converLayer = this.converLayer;
+    // var featureOverlay = (eventName=='pointermove')?this.featureOverlay(map):'';
+    // this.highlight;
+    // map.on(eventName, function (evt) {
+    //     if(eventName=='singleclick'){
+    //         //地图绑定单击事件
+    //         me.singleClick(evt);
+    //     }else if(eventName=='pointermove'){
+    //         //地图绑定鼠标滑过事件
+    //         me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
+    //     }else if(eventName=='moveend'){
+    //         var zoom = map.getView().getZoom();  //获取当前地图的缩放级别
+    //         if(zoom >= 12){
+    //             if(!addPointStatus){
+    //                 console.log('添加点标记');
+    //                 data.forEach(item=>{
+    //                     me.addPoint(item.coord,item.lableName);
+    //                 });
+    //                 addPointStatus = true;
+    //             }
+    //         }else{
+    //             if(addPointStatus){
+    //                 me.layer.getSource().clear();   //控制地图图层不可见
+    //                 addPointStatus = false;
+    //             }
+    //         }
+    //     }
+    // });
 }
 function singleClick(evt){
     debugger;
@@ -214,7 +285,6 @@ function featureOverlay(map){
 function setMyStyle(map,jsonAreaCode){
     var mystyle = new ol.style.Style({
         fill: new ol.style.Fill({
-            // color:"rgba(72,61,139, 0.4)"
             color:jsonAreaCode.bgGround.fillColor,
         }),
         stroke: new ol.style.Stroke({
@@ -227,11 +297,13 @@ function setMyStyle(map,jsonAreaCode){
         source: new ol.source.Vector(),
         style: mystyle
     });
+    this.converLayer = converLayer;
     map.addLayer(converLayer);
     return converLayer;
 }
 //添加遮罩
-function addconver(url,converLayer,jsonAreaCode) {
+function addconver(url,jsonAreaCode) {
+    var me = this;
     if(!this.jsonData){
         $.getJSON(url, function(data) {
             this.jsonData = data;
@@ -242,7 +314,7 @@ function addconver(url,converLayer,jsonAreaCode) {
             var convertFt = new ol.Feature({
                 geometry: converGeom
             });
-            converLayer.getSource().addFeature(convertFt);
+            me.converLayer.getSource().addFeature(convertFt);
         });
     }
 }
@@ -258,7 +330,7 @@ function getAreaGeoJSON(data,jsonAreaCode){
     }
     var index=0;
     var adcode = jsonAreaCode.areaCode;
-    if(jsonAreaCode.level=='street'){
+    if(jsonAreaCode.levels=='street'){
         adcode = jsonAreaCode.areaCode.substring(0,jsonAreaCode.areaCode.length-2);
     }
     for(var i=0;i<length;i++){
@@ -280,7 +352,50 @@ function erase(geom) {
     })
     return polygonRing;
 }
+function addPoint(lng,lat,lableName){
+    if(!this.layer){
+        return;
+    }
+    var anchor = new ol.Feature({
+        geometry: new ol.geom.Point([lng,lat])
+    });
+    anchor.setStyle(new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: 10,
+            stroke: new ol.style.Stroke({
+                color: '#fff'
+            }),
+            fill: new ol.style.Fill({
+                color: '#3399CC'
+            })
+        }),
+        text: new ol.style.Text({
+            //对齐方式
+            textAlign: 'center',
+            //文本基线
+            textBaseline: 'middle',
+            //字体样式
+            font: 'normal 14px 微软雅黑',
+            //文本内容
+            text: lableName,
+            //填充样式
+            fill: new ol.style.Fill({
+                color: '#aa3300'
+            }),
+            //笔触
+            stroke: new ol.style.Stroke({
+                color: '#2dff51',
+                width: 2
+            })
+        })
+    }));
+    this.layer.getSource().addFeature(anchor);
+    return anchor;
+}
 function addMarks(iconName,lableName,coord){
+    if(!this.layer){
+        return;
+    }
     // 创建一个Feature，并设置好在地图上的位置
     var anchor = new ol.Feature({
         geometry: new ol.geom.Point([coord.lng,coord.lat])
@@ -312,13 +427,17 @@ function addMarks(iconName,lableName,coord){
             })
         })
     }));
-    var layers = this.map.getLayers();
+    // var layers = this.map.getLayers();
     // 添加到之前的创建的layer中去
-    layers.array_[1].getSource().addFeature(anchor);
+    // layers.array_[1].getSource().addFeature(anchor);
+    this.layer.getSource().addFeature(anchor);
 }
 function cleanMarks(){
-    var layers = this.map.getLayers();
-    layers.array_[1].getSource().clear();
+    if(this.layer){
+        this.layer.getSource().clear();
+    }
+    // var layers = this.map.getLayers();
+    // layers.array_[1].getSource().clear();
 }
 function addHotMap(features){
     if(this.hotVector){
