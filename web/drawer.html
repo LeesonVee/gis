@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="css/ol.css" type="text/css">
+    <script type="text/javascript" src="js/ajaxrequestasync.js"></script>
+    <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
+    <script src="js/jquery-2.2.3.min.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/ol.js"></script>
+    <script src="js/map.js"></script>
+    <link rel="stylesheet" href="css/element.css">
+    <!-- 引入组件库 -->
+    <script type="text/javascript" src="js/vue.min.js"></script>
+    <script src="js/element.js"></script>
+    <style type="text/css">
+        html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
+        .fullScreen{
+            width: 100%;
+            height: 100%;
+        }
+        .show_right {
+            display: block;
+            cursor: pointer;
+            width: 12px;
+            height: 12px;
+            position: absolute;
+            top: 0px;
+            right: 15px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" class="fullScreen">
+    <div id="map" class="fullScreen"></div>
+    <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
+    <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" size="20%">
+        <el-form :model="form" label-width="100px">
+            <el-form-item label="标注">
+                <el-select v-model="form.marks" placeholder="请选择">
+                    <el-option label="登革热" value="denggere"></el-option>
+                    <el-option label="传染病" value="chuanranbing"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="热力图">
+                <el-select v-model="form.hots" placeholder="请选择">
+                    <el-option label="登革热" value="denggere"></el-option>
+                    <el-option label="传染病" value="chuanranbing"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('sure')">确定</el-button>
+                <el-button type="success" @click="submitForm('reset')">重置</el-button>
+            </el-form-item>
+        </el-form>
+    </el-drawer>
+</div>
+<script type="text/javascript">
+    var apiRootPath="http://127.0.0.1:8120/hub/";
+    var path = "http://127.0.0.1:8140/gis/";
+    new Vue({
+        el: '#app',
+        data:{
+            drawer: false,
+            form:{
+                marks:'',
+                hots:''
+            },
+            layer:'',
+            marks:[
+                {name:'vee1', coord:{lng:'113.37674882921996',lat:'23.169208329256094'},imageName:'organ'},
+                {name:'vee2', coord:{lng:'113.37699159506738',lat:'23.17042215849321'},imageName:'organ'},
+                {name:'vee3', coord:{lng:'113.40855115523235',lat:'23.161925353833414'},imageName:'disease'},
+                {name:'vee4', coord:{lng:'113.39592733116636',lat:'23.19955406018394'},imageName:'disease'},
+                {name:'vee5', coord:{lng:'113.33839182532716',lat:'23.142746851887015'},imageName:'organ'},
+            ]
+        },
+        mounted(){
+            this.loadGisData('POST',apiRootPath+'map/getMapByPkey.html',{ID:"7f32a61e89344a1bb798"});
+        },
+        methods:{
+            addMarksByCoords:function(data){
+                cleanMarks();
+                data.forEach(item=>{
+                    if(this.form.marks=='denggere' && item.imageName=='disease'){
+                        addMarks(item.name,item.coord,item.imageName);
+                    }else if(this.form.marks=='chuanranbing' && item.imageName=='organ'){
+                        addMarks(item.name,item.coord,item.imageName);
+                    }
+
+                   // addMarks('机构',{lng:'113.37005764245988',lat:'23.178914710879326'},'organ');
+                });
+
+            },
+            handleClose:function(done) {
+                done();
+            },
+            submitForm:function(type) {
+                if(type=='sure'){
+                    this.addMarksByCoords(this.marks);
+                }
+                this.drawer=false;
+            },
+            rquestParams:function(method,api,data){
+                var jsonDataList={
+                    httpMethod:method,
+                    url:api,
+                    data:data?JSON.stringify(data):''
+                };
+                return jsonDataList;
+            },
+            loadGisData:function(method,api,data){
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        var body = json.body;
+                        var baseInfo = JSON.parse(body.BASE_INFO);
+                        var styleInfo = JSON.parse(body.STYLE_INFO);
+                        var cfgs = baseInfo;
+                        for(var p in styleInfo){cfgs[p] = styleInfo[p];}
+                        initMap(cfgs);
+                    }
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>
