@@ -20,7 +20,10 @@ function setRootParam(cfgs){
         // areaCode:'440100',
         //到街道数据必须以code+'-1'方式命名
         upAreaCode:cfgs.upAreaCode,//'440100-1'
-        areaCode:cfgs.areaCode//'440106-1'
+        areaCode:cfgs.areaCode,//'440106-1',
+        otherMap:cfgs.otherMap||'0',
+        mapType:cfgs.mapType
+
     }
     fixRootParam(jsonAreaCode,cfgs);
     return jsonAreaCode;
@@ -44,12 +47,12 @@ function addTextStyle(cfg){
         //文本基线
         textBaseline: cfg.textBaseline||'middle',
         //字体样式
-        font: cfg.font||'normal 14px 微软雅黑',
+        font: cfg.font||'bold 18px 微软雅黑',
         //文本内容
         text: cfg.name||'',
         //填充样式
         fill: new ol.style.Fill({
-            color: cfg.fillColor||'#FFFFFF'
+            color: cfg.fillColor||'#ff241c'
         }),
         //笔触
         // stroke: new ol.style.Stroke({
@@ -62,19 +65,19 @@ function addTextStyle(cfg){
 //设置显示区域背景填充色
 function fillBgColor(color){
     var fill = new ol.style.Fill({
-        color: color||'#011659'
+        color: color||'rgba(17, 30, 88, 0)'
         // color: color||'#C88D0B01'
     });
     return fill;
 }
 //加载高德地图,默认加载高德地图在线地图
 function gaodeLayers(url){
-    var gdLayer =  new ol.layer.Tile({
+    var amapLayer =  new ol.layer.Tile({
         source: new ol.source.XYZ({
             url: url||'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
         })
     });
-    this.gdLayer = gdLayer;
+    this.amapLayer = amapLayer;
     // var layers = [
     //     new ol.layer.Tile({
     //         source: new ol.source.XYZ({
@@ -82,7 +85,7 @@ function gaodeLayers(url){
     //         })
     //     })
     // ];
-    return this.gdLayer;
+    return this.amapLayer;
 }
 function addMapArea(jsonAreaCode){
     var layer = new ol.layer.Vector({
@@ -95,9 +98,9 @@ function addMapArea(jsonAreaCode){
         style:function (feature, resolution) {
             var areaCfg = feature.values_;
             var color = jsonAreaCode.areaColor;
-            if(areaCfg.name=='天河区' || areaCfg.name=='增城区'){
-                color = '#3FC012';
-            }
+            // if(areaCfg.name=='天河区' || areaCfg.name=='增城区'){
+            //     color = '#3FC012';
+            // }
             return new ol.style.Style({
                 fill:this.fillBgColor(color),
                 text:this.addTextStyle(areaCfg),
@@ -111,18 +114,31 @@ function addMapArea(jsonAreaCode){
 }
 //初始化地图
 function initMap(cfgs){
+    var layers = [];
     this.jsonData,this.dataIndex;
     var jsonAreaCode = this.setRootParam(cfgs);
-    //var layers = this.gaodeLayers();
     this.addMapArea(jsonAreaCode);
-    //layers.push(layer);
 
+    if(cfgs.otherMap=='1'){
+        if(cfgs.mapType=='amap'){
+            this.gaodeLayers('http://127.0.0.1:8120/hub/static/imgXYZ/'+cfgs.mapType+'/{z}-{x}-{y}.jpg');
+            layers.push(this.amapLayer);
+        }else if(cfgs.mapType=='bmap'){
+            //FIXME
+        }
+    }else{
+        if(this.gdLayer){
+            this.gdLayer = null;
+        }
+    }
+    layers.push(this.layer);
+    var center = [parseFloat(jsonAreaCode.center[0]),parseFloat(jsonAreaCode.center[1])];
     var map = new ol.Map({
         target: jsonAreaCode.target,
-        layers: [this.layer],
+        layers: layers,
         view: new ol.View({
             projection: jsonAreaCode.projection,
-            center: jsonAreaCode.center,
+            center: center,
             zoom: jsonAreaCode.zoom
         })
     });
@@ -140,7 +156,7 @@ function addEvent(jsonAreaCode,map){
     var me = this;
     jsonAreaCode.events.forEach(event=>{
         if(event=='singleclick'){
-            map.on(eventName, function (evt) {
+            map.on(event, function (evt) {
                 //地图绑定单击事件
                 me.singleClick(evt);
             });
@@ -283,6 +299,7 @@ function featureOverlay(map){
 }
 //设置自定义图层
 function setMyStyle(map,jsonAreaCode){
+
     var mystyle = new ol.style.Style({
         fill: new ol.style.Fill({
             color:jsonAreaCode.bgGround.fillColor,
@@ -295,7 +312,7 @@ function setMyStyle(map,jsonAreaCode){
 
     var converLayer = new ol.layer.Vector({
         source: new ol.source.Vector(),
-        style: mystyle
+        style: jsonAreaCode.otherMap=='0'?mystyle:null
     });
     this.converLayer = converLayer;
     map.addLayer(converLayer);
@@ -353,6 +370,7 @@ function erase(geom) {
     return polygonRing;
 }
 function addPoint(lng,lat,lableName){
+    //医院、居委会(green)、病人(red)
     if(!this.layer){
         return;
     }
@@ -392,7 +410,7 @@ function addPoint(lng,lat,lableName){
     this.layer.getSource().addFeature(anchor);
     return anchor;
 }
-function addMarks(iconName,lableName,coord){
+function addMarks(lableName,coord,iconName){
     if(!this.layer){
         return;
     }
@@ -588,7 +606,6 @@ function closeDraw(){
     }
 }
 function getPolyRange(){
-    debugger;
     var polys = [];
     if(this.polygonLayer){
         var features = this.polygonLayer.getSource().getFeatures();
@@ -597,7 +614,6 @@ function getPolyRange(){
             for(var i=0,length=coors.length;i<length-2;i++){
 
             }
-            debugger;
         });
 
 
