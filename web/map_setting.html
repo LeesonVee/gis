@@ -61,145 +61,154 @@
 <div id="app">
     <el-container>
         <el-main>
-            <el-container>
-                <el-main>
-                    <div :id="form.target" style="width: 100%;height: 100%;"></div>
-                </el-main>
-                <el-footer>Footer</el-footer>
-            </el-container>
+            <div :id="form.target" style="width: 100%;height: 100%;"></div>
         </el-main>
         <el-aside width="400px">
-            <el-tabs v-model="activeName">
-                <el-tab-pane label="基础设置" name="systemBase">
+            <el-container>
+                <el-main>
                     <el-form ref="form" :model="form" :rules="rules" label-width="100px" style="margin: 10px 2px 0px 0px;">
-                        <el-form-item label="地图名称" prop="name">
-                            <el-input v-model="form.name"></el-input>
-                        </el-form-item>
-                        <el-form-item label="渲染元素" prop="target">
-                            <el-input v-model="form.target" @change="targetChange" onkeyup="this.value=this.value.replace(/[^\w\.\/]/ig,'');"></el-input>
-                        </el-form-item>
-                        <el-form-item label="显示级别" prop="levels" style="text-align: left;">
-                            <el-select v-model="form.levels"  placeholder="请选择最大显示级别">
-                                <el-option label="省级" value="province"></el-option>
-                                <el-option label="市级" value="city"></el-option>
-                                <el-option label="区级" value="district"></el-option>
-                                <el-option label="街道" value="street"></el-option>
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="行政区划" required>
-                            <div>
-                                <el-col :span="8">
-                                    <el-form-item prop="province">
-                                        <el-select v-model="form.province"  placeholder="请选择">
-                                            <el-option label="广东省" value="440000"></el-option>
-                                        </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </div>
-                            <div v-if="form.levels!=='province'">
-                                <el-col class="line" :span="1">-</el-col>
-                                <el-col :span="7">
-                                    <el-form-item prop="city">
-                                        <el-select v-model="form.city"  placeholder="请选择">
-                                            <el-option label="广州市" value="440100"></el-option>
-                                        </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </div>
-                            <div v-if="form.levels == 'district' || form.levels == 'street'">
-                                <el-col class="line" :span="1">-</el-col>
-                                <el-col :span="7">
-                                    <el-form-item prop="district">
-                                        <el-select v-model="form.district" placeholder="请选择">
-                                            <el-option label="天河区" value="440106"></el-option>
-                                        </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </div>
-                        </el-form-item>
-                        <el-form-item label="中心经纬度" required>
-                            <el-col :span="11">
-                                <el-form-item prop="lng">
-                                    <el-input v-model="form.lng" onkeyup="this.value=this.value.replace(/[^\d.]/g,'');"></el-input>
+                        <el-tabs v-model="activeName">
+                            <el-tab-pane label="基础设置" name="systemBase">
+                                <el-form-item label="地图名称" prop="name">
+                                    <el-input v-model="form.name"></el-input>
                                 </el-form-item>
-                            </el-col>
-                            <el-col :span="2"> - </el-col>
-                            <el-col :span="11">
-                                <el-form-item prop="lat">
-                                    <el-input v-model="form.lat" onkeyup="this.value=this.value.replace(/[^\d.]/g,'');"></el-input>
+                                <el-form-item label="渲染元素" prop="target">
+                                    <el-input v-model="form.target" @change="targetChange" onkeyup="this.value=this.value.replace(/[^\w\.\/]/ig,'');"></el-input>
                                 </el-form-item>
-                            </el-col>
-                        </el-form-item>
-                        <el-form-item label="缩放级别" prop="zoom" style="text-align: left">
-                            <el-select v-model="form.zoom" placeholder="请选择">
-                                <el-option v-for="item in zooms" :key="item.value" :label="item.label" :value="item.value"></el-option>
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="地图编码" style="text-align: left;">
-                            <el-select v-model="form.projection">
-                                <el-option label="标准编码" value="EPSG:4326"></el-option>
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="离线地图" style="text-align: left;">
-                            <div>
-                                <el-col :span="24">
-                                    <el-radio-group v-model="form.otherMap">
-                                        <el-radio :label="0">不加载</el-radio>
-                                        <el-radio :label="1">加载</el-radio>
-                                    </el-radio-group>
-                                </el-col>
-                            </div>
-                            <div v-if="form.otherMap==1">
-                                <el-col :span="24">
-                                    <el-form-item prop="mapType">
-                                        <el-select v-model="form.mapType" placeholder="请选择">
-                                            <el-option label="高的地图" value="gaode"></el-option>
-                                            <!--<el-option label="百度地图" value="baidu"></el-option>-->
-                                        </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </div>
-                        </el-form-item>
-                        <el-form-item label="背景颜色" style="text-align: left;">
-                            <el-color-picker v-model="form.fillColor" show-alpha></el-color-picker>
-                        </el-form-item>
-                        <el-form-item label="区域颜色" style="text-align: left;">
-                            <el-color-picker v-model="form.areaColor" show-alpha></el-color-picker>
-                        </el-form-item>
-                        <el-form-item label="线条样式" style="text-align: left;">
-                            <el-col :span="4">
-                                <el-form-item>
-                                    <el-color-picker v-model="form.areaStrokeColor" show-alpha></el-color-picker>
+                                <el-form-item label="显示级别" prop="levels" style="text-align: left;">
+                                    <el-select v-model="form.levels"  placeholder="请选择最大显示级别">
+                                        <el-option label="省级" value="province"></el-option>
+                                        <el-option label="市级" value="city"></el-option>
+                                        <el-option label="区级" value="district"></el-option>
+                                        <el-option label="街道" value="street"></el-option>
+                                    </el-select>
                                 </el-form-item>
-                            </el-col>
-                            <el-col :span="4">
-                                <el-form-item>
-                                    <el-input-number size="small" v-model="form.areaStrokeWidth" :min="2" :max="10"></el-input-number>
+                                <el-form-item label="行政区划" required>
+                                    <div>
+                                        <el-col :span="8">
+                                            <el-form-item prop="province">
+                                                <el-select v-model="form.province"  placeholder="请选择">
+                                                    <el-option label="广东省" value="440000"></el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-col>
+                                    </div>
+                                    <div v-if="form.levels!=='province'">
+                                        <el-col class="line" :span="1">-</el-col>
+                                        <el-col :span="7">
+                                            <el-form-item prop="city">
+                                                <el-select v-model="form.city"  placeholder="请选择">
+                                                    <el-option label="广州市" value="440100"></el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-col>
+                                    </div>
+                                    <div v-if="form.levels == 'district' || form.levels == 'street'">
+                                        <el-col class="line" :span="1">-</el-col>
+                                        <el-col :span="7">
+                                            <el-form-item prop="district">
+                                                <el-select v-model="form.district" placeholder="请选择">
+                                                    <el-option label="天河区" value="440106"></el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-col>
+                                    </div>
                                 </el-form-item>
-                            </el-col>
-                        </el-form-item>
-                        <el-form-item label="添加事件" style="text-align: left;">
-                            <el-checkbox-group v-model="form.events">
-                                <el-checkbox label="singleClick" key="singleClick">单击</el-checkbox>
-                                <el-checkbox label="pointermove" key="pointermove">鼠标滑过</el-checkbox>
-                                <el-checkbox label="moveend" key="moveend">缩放</el-checkbox>
-                            </el-checkbox-group>
-                        </el-form-item>
-                        <el-form-item style="text-align: left;">
-                            <el-button type="primary" @click="submitForm('form','create')">创建地图</el-button>
-                            <el-button type="success" @click="submitForm('form','save')">保存地图</el-button>
-                            <el-button @click="resetForm('form')">重置</el-button>
-                        </el-form-item>
+                                <el-form-item label="中心经纬度" required>
+                                    <el-col :span="11">
+                                        <el-form-item prop="lng">
+                                            <el-input v-model="form.lng" onkeyup="this.value=this.value.replace(/[^\d.]/g,'');"></el-input>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="2"> - </el-col>
+                                    <el-col :span="11">
+                                        <el-form-item prop="lat">
+                                            <el-input v-model="form.lat" onkeyup="this.value=this.value.replace(/[^\d.]/g,'');"></el-input>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-form-item>
+                                <el-form-item label="缩放级别" prop="zoom" style="text-align: left">
+                                    <el-select v-model="form.zoom" placeholder="请选择">
+                                        <el-option v-for="item in zooms" :key="item.value" :label="item.label" :value="item.value"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="地图编码" style="text-align: left;">
+                                    <el-select v-model="form.projection">
+                                        <el-option label="标准编码" value="EPSG:4326"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="离线地图" style="text-align: left;">
+                                    <div>
+                                        <el-col :span="24">
+                                            <el-radio-group v-model="form.otherMap">
+                                                <el-radio :label="0">不加载</el-radio>
+                                                <el-radio :label="1">加载</el-radio>
+                                            </el-radio-group>
+                                        </el-col>
+                                    </div>
+                                    <div v-if="form.otherMap==1">
+                                        <el-col :span="24">
+                                            <el-form-item prop="mapType">
+                                                <el-select v-model="form.mapType" placeholder="请选择">
+                                                    <el-option label="高的地图" value="amap"></el-option>
+                                                    <!--<el-option label="百度地图" value="baidu"></el-option>-->
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-col>
+                                    </div>
+                                </el-form-item>
+                                <el-form-item label="添加事件" style="text-align: left;">
+                                    <el-checkbox-group v-model="form.events">
+                                        <el-checkbox label="singleClick" key="singleClick">单击</el-checkbox>
+                                        <el-checkbox label="pointermove" key="pointermove">鼠标滑过</el-checkbox>
+                                        <el-checkbox label="moveend" key="moveend">缩放</el-checkbox>
+                                    </el-checkbox-group>
+                                </el-form-item>
+                                <el-form-item style="text-align: left;">
+
+                                    <el-button @click="resetForm('form')">重置</el-button>
+                                </el-form-item>
+                            </el-tab-pane>
+                            <el-tab-pane label="样式设置" name="systemStyle">
+                                <el-form-item label="背景颜色" style="text-align: left;">
+                                    <el-color-picker v-model="form.fillColor" show-alpha></el-color-picker>
+                                </el-form-item>
+                                <el-form-item label="区域颜色" style="text-align: left;">
+                                    <el-color-picker v-model="form.areaColor" show-alpha></el-color-picker>
+                                </el-form-item>
+                                <el-form-item label="线条样式" style="text-align: left;">
+                                    <el-col :span="4">
+                                        <el-form-item>
+                                            <el-color-picker v-model="form.areaStrokeColor" show-alpha></el-color-picker>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="4">
+                                        <el-form-item>
+                                            <el-input-number size="small" v-model="form.areaStrokeWidth" :min="2" :max="10"></el-input-number>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-form-item>
+                            </el-tab-pane>
+                        </el-tabs>
                     </el-form>
-                </el-tab-pane>
-                <el-tab-pane label="样式设置" name="systemStyle">样式设置</el-tab-pane>
-            </el-tabs>
+                </el-main>
+                <el-footer>
+                    <el-form label-width="100px">
+                        <el-button type="primary" @click="submitForm('form','create')">创建地图</el-button>
+                        <el-button type="success" @click="submitForm('form','save')">保存地图</el-button>
+                    </el-form>
+                </el-footer>
+            </el-container>
+
         </el-aside>
     </el-container>
 </div>
 <script type="text/javascript">
-    var apiRootPath='http://10.32.0.169:8120/hub/';
-    var path = 'http://10.32.0.169:8140/gis/';
+    //天河
+//    var apiRootPath='http://10.195.237.115:8120/hub/';
+//    var path = 'http://10.195.237.116:8140/gis/';
+    var apiRootPath='http://127.0.0.1:8120/hub/';
+    var path = 'http://127.0.0.1:8140/gis/';
     new Vue({
         el: '#app',
         data:{
@@ -217,10 +226,10 @@
                 zoom:'',
                 projection:'EPSG:4326',
                 otherMap:0,
-                mapType:'gaode',
-                fillColor:'rgba(0, 0, 0, 1)',
+                mapType:'amap',
+                fillColor:'rgba(0, 0, 0, 0)',
                 strokeColor:'#080107',
-                areaColor:'rgba(17, 30, 88, 1)',
+                areaColor:'rgba(17, 30, 88, 0)',
                 areaStrokeColor:'rgba(67, 231, 249, 1)',
                 areaStrokeWidth:2,
                 events:[]
@@ -268,6 +277,7 @@
                 {value:10,label:'10级'},
                 {value:11,label:'11级'},
                 {value:12,label:'12级'},
+                {value:12.5,label:'12.5级'},
                 {value:13,label:'13级'},
                 {value:14,label:'14级'},
                 {value:15,label:'15级'},
@@ -311,6 +321,9 @@
                             this.saveGisData('POST',apiRootPath+'map/saveMapData.html',params);
                         }
                     } else {
+                        if(this.activeName='systemStyle'){
+                            this.myMessage('请完善【基础设置】数据','error');
+                        }
                         return false;
                     }
                 });
@@ -318,6 +331,7 @@
             resetForm:function(formName) {
                 debugger;
                 this.$refs[formName].resetFields();
+                this.form.otherMap=0;
                 this.form.events=[];
                 this.resetMapCfgs();
             },
@@ -343,11 +357,15 @@
                     this.mapCfgs.baseInfo['upAreaCode']=form.city+'-1';
                     this.mapCfgs.baseInfo['areaCode']=form.district+'-1';
                 }
-                this.mapCfgs.baseInfo['fillColor']=form.fillColor;
-                this.mapCfgs.baseInfo['areaColor']=form.areaColor;
-                this.mapCfgs.baseInfo['areaStrokeColor']=form.areaStrokeColor;
-                this.mapCfgs.baseInfo['areaStrokeWidth']=form.areaStrokeWidth;
+                if(form.otherMap=='1'){
+                    this.mapCfgs.baseInfo['otherMap']=form.otherMap;
+                    this.mapCfgs.baseInfo['mapType']=form.mapType;
+                }
                 this.mapCfgs.baseInfo['events']=form.events;
+                this.mapCfgs.styleInfo['fillColor']=form.fillColor;
+                this.mapCfgs.styleInfo['areaColor']=form.areaColor;
+                this.mapCfgs.styleInfo['areaStrokeColor']=form.areaStrokeColor;
+                this.mapCfgs.styleInfo['areaStrokeWidth']=form.areaStrokeWidth;
             },
             resetMapCfgs:function(){
                 $('#'+this.form.target).html('');
