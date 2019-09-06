@@ -2,307 +2,189 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Demo</title>
-    <link rel="stylesheet" href="css/bootstrap.css" type="text/css">
-    <script src="js/jquery-2.2.3.min.js"></script>
+    <title>Title</title>
     <link rel="stylesheet" href="css/ol.css" type="text/css">
+    <script type="text/javascript" src="js/ajaxrequestasync.js"></script>
+    <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
+    <script src="js/jquery-2.2.3.min.js"></script>
+    <script src="js/bootstrap.js"></script>
     <script src="js/ol.js"></script>
     <script src="js/map.js"></script>
-    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=e2e63e4803357b9f623f59282a3a691b&plugin=AMap.Driving,AMap.Walking"></script>
-    <style>
-        head,body{
+    <link rel="stylesheet" href="css/element.css">
+    <!-- 引入组件库 -->
+    <script type="text/javascript" src="js/vue.min.js"></script>
+    <script src="js/element.js"></script>
+    <style type="text/css">
+        html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
+        .fullScreen{
             width: 100%;
             height: 100%;
         }
-        #map{
-            width: 500px;
-            height: 600px;
-            top:0;
-            position:absolute;
-        }
-        #btnGroup{
-            top: 600px;
-            position:absolute;
+        .show_right {
+            display: block;
+            cursor: pointer;
+            width: 12px;
+            height: 12px;
+            position: absolute;
+            top: 0px;
+            right: 15px;
         }
     </style>
 </head>
 <body>
-<div id="year" style='position:absolute; z-index:9999; top:0;width:500px;text-align: center;font-weight: bold;font-size: 20px;color: yellow;'></div>
-<div id="map"></div>
-<div id="btnGroup">
-    <input id="btn1" type="button" value="机构marks" onclick="addMarks('organ','机构',{lng:'113.37005764245988',lat:'23.178914710879326'})"/>
-    <input id="btn2" type="button" value="医生marks" onclick="addMarks('doctor','医生',{lng:'113.35722729563713',lat:'23.155358880758286'})"/>
-    <input id="btn3" type="button" value="疾病marks" onclick="addMarks('disease','流感',{lng:'113.41275840997696',lat:'23.14389444887638'})"/>
-    <input id="btn4" type="button" value="清除marks" onclick="cleanMarks()"/>
-    <input id="btn5" type="button" value="显示热力图" onclick="addStaticHotMap()"/>
-    <input id="btn6" type="button" value="关闭热力图" onclick="removeHotMap()"/>
-    <input id="btn7" type="button" value="轮播热力图" onclick="loopShowHotMapBegin()"/>
-    <input id="btn8" type="button" value="关闭轮播" onclick="loopShowHotMapEnd()"/>
-    <input id="btn9" type="button" value="开启自定义框定区域" onclick="openDefinedDraw()"/>
-    <input id="btn10" type="button" value="关闭自定义框定区域" onclick="closeDraw()"/>
-    <input id="btn13" type="button" value="test" onclick="getPolyRange()"/>
-
-    <div>
-        城市：<input id="searchCity" type="text" value="广州" disabled="disabled"/></br></br>
-        起点：<input id="beginAddress" type="text" value="广州东站"/>-终点<input id="endAddress" type="text" value="华南植物园"/>
-        <input id="btn11" type="button" value="驾车" onclick="searchPath('driver')"/>
-        <input id="btn12" type="button" value="步行" onclick="searchPath('walk')"/>
-    </div>
+<div id="app" class="fullScreen">
+    <div id="map" class="fullScreen" ref="mymap"></div>
+    <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
+    <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" :size="size">
+        <el-table ref="multipleTable" :data="tableData" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="350">
+            <el-table-column type="selection" width="55"></el-table-column>
+            <el-table-column label="名称" width="220">
+                <template slot-scope="scope">{{ scope.row.MODEL_RELATION_NAME }}</template>
+            </el-table-column>
+            <el-table-column prop="MODEL_RELATION_TYPE" label="类别">
+                <template slot-scope="scope">
+                    <el-tag :type="scope.row.MODEL_RELATION_TYPE === '1' ? 'primary' : 'success'" disable-transitions>{{scope.row.MODEL_RELATION_TYPE === '1'?'标注':'热力图'}}</el-tag>
+                </template>
+            </el-table-column>
+        </el-table>
+        <div style="margin: 20px 0px 0px 20px;">
+            <el-button type="primary" @click="showMap()">确定</el-button>
+            <el-button type="success" @click="toggleSelection()">重置</el-button>
+        </div>
+    </el-drawer>
 </div>
-
-<div id="container" style="display: none;"></div>
-<script>
-
-    var cfgs = {
-        target:'map',
-        zoom:11,
-        center:[113.335367,23.13559],
-        projection:'EPSG:4326',
-        fillColor:"#080107",
-        strokeColor:'#080107',
-        level:'street',
-        upAreaCode:'440100-1',
-        areaCode:'440106-1'
-    }
-    var olMap = initMap(cfgs);
-    function addStaticHotMap(){
-        var features=[{type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
-            {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
-            {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
-            {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
-            {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
-            {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
-            {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
-            {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
-            {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
-            {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
-            {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
-            {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
-            {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
-            {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
-            {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
-            {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
-            {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
-            {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
-            {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
-            {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
-            {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
-            {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
-            {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}];
-        addHotMap(features);
-    }
-
-    var intervalFun;
-    function loopShowHotMapBegin(){
-        var heatDatas =[{
-            date:'2016年',
-            text:'流感',
-            heatData:[{
-                type: "FeatureCollection",
-                features:  [
-                    {type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
-                    {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
-                    {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
-                    {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
-                    {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
-                    {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
-                    {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
-                    {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
-                    {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
-                    {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
-                    {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
-                    {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
-                    {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
-                    {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
-                    {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
-                    {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
-                    {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
-                    {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
-                    {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
-                    {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
-                    {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
-                    {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
-                    {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}
-                ]
-            }]
-        },{
-            date:'2017年',
-            text:'流感',
-            heatData:[{
-                type: "FeatureCollection",
-                features:  [
-                    {type: "Point","coordinates": [113.40006351470947, 23.193875402212143], count: 10},
-                    {type: "Point","coordinates": [113.40668454766273, 23.18638265132904], count: 10},
-                    {type: "Point","coordinates": [113.41117456555367, 23.1967855989933], count: 10},
-                    {type: "Point","coordinates": [113.39844614267349, 23.193812370300293], count: 10},
-                ]
-            }]
-        },{
-            date:'2018年',
-            text:'流感',
-            heatData:[{
-                type: "FeatureCollection",
-                features:  [
-                    {type: "Point","coordinates": [113.3544471859932, 23.203421384096146], count: 10},
-                    {type: "Point","coordinates": [113.35447132587433, 23.22862207889557], count: 10},
-                    {type: "Point","coordinates": [113.35406497120857, 23.190349638462067], count: 10},
-                    {type: "Point","coordinates": [113.37615698575974, 23.19352000951767], count: 10},
-                ]
-            }]
-        },{
-            date:'2019年',
-            text:'流感',
-            heatData:[{
-                type: "FeatureCollection",
-                features:  [
-                    {type: "Point","coordinates": [113.34618732333183, 23.161409944295883], count: 10},
-                    {type: "Point","coordinates": [113.36334809660912, 23.162637054920197], count: 10}
-                ]
-            }]
-        }];
-
-        intervalFun = setInterval(function(){
-            loopShowHotMap(heatDatas)
-        },2000);
-
-    }
-    function loopShowHotMapEnd(){
-        if(intervalFun){
-            clearInterval(intervalFun);
-            intervalFun=undefined;
-        }
-    }
-    function openDefinedDraw() {
-        var cfgs = {
-            layerStyle:{
-                fillColor:'rgba(94, 110, 202, 0.5)',
-                strokeColor:'#CCA30B',
-                strokeWidth:2,
-                imageRadius:7,
-                imageColor:'red'
-            },
-            drawStyle:{
-                type:'Polygon',//Circle,Polygon
-                fillColor:'rgba(72,61,139, 0.4)',
-                strokeColor:'rgba(0, 0, 0, 0.5)',
-                strokeLineDash:[10, 10],
-                strokeWidth:2,
-                imageRadius:5,
-                imageStrokeColor:'rgba(0, 0, 0, 0.7)',
-                imageFillColor:'green',
-                maxPoints:2
-            }
-        }
-        openDraw(cfgs);
-    }
-
-    function addLine(){
-
-        addLineString('organ','机构',[{lng:'113.37005764245988',lat:'23.178914710879326'},{lng:'113.35722729563713',lat:'23.155358880758286'},{lng:'113.41275840997696',lat:'23.14389444887638'}]);
-    }
-
-    function searchPath(type){
-        debugger;
-        var searchCity = $('#searchCity').val();
-        var beginAddress = $('#beginAddress').val();
-        var endAddress = $('#endAddress').val();
-        if(!searchCity || !beginAddress || !endAddress){
-            log.error('请输入值');
-            return;
-        }
-        var map = new AMap.Map("container", {
-            resizeEnable: true,
-            center: [113.3612,23.12468],//地图中心点
-            zoom: 13 //地图显示的缩放级别
-        });
-        //构造路线导航类
-        var mapPath;
-        switch (type){
-            case 'walk':
-                mapPath = new AMap.Walking({
-                    map: map
-                });
-                break;
-            case 'driver':
-                mapPath = new AMap.Driving({
-                    map: map
-                });
-                break;
-            default:
-                mapPath =new AMap.Driving({
-                    map: map
-                });
-                break;
-        }
-
-        var searchCfgs = [
-            {keyword: beginAddress,city:searchCity},
-            {keyword: endAddress,city:searchCity}
-        ];
-        var me = this;
-        // 根据起终点经纬度规划驾车导航路线
-        mapPath.search(searchCfgs, function(status, result) {
-            debugger;
-            if (status === 'complete') {
-                var startF = new ol.Feature(new ol.geom.Point([result.start.location.lng, result.start.location.lat]));
-                startF.name = result.start.name;
-                setPointStyle(startF,{
-                    imageFillColor:'green',
-                    strokeColor:'#8f8f8f',
-                    textFillColor:'white'
-                });
-                var endF = new ol.Feature(new ol.geom.Point([result.end.location.lng, result.end.location.lat]));
-                endF.name = result.end.name;
-                setPointStyle(endF,{
-                    imageFillColor:'red',
-                    strokeColor:'#8f8f8f',
-                    textFillColor:'white'
-                });
-                features = [startF, endF];
-                var routes = result.routes;
-                for(var i=0;i<routes.length;i++){
-                    var _route = routes[i];
-                    var steps = _route.steps;
-                    if(type=='walk'){
-                        for(var j=0;j<steps.length;j++){
-                            var _step = steps[j];
-                            var path = _step.path;
-                            var _coord = [];
-                            for(var k=0;k<path.length;k++){
-                                var _path = path[k];
-                                _coord.push([_path.lng, _path.lat])
-                            }
-                            var pathF = new ol.Feature(new ol.geom.LineString(_coord));
-                            //pathF.status = tmcsPaths[m].status;
-                            setPathStyle(pathF);
-                            features.push(pathF);
-                        }
-                    }else{
-                        for(var j=0;j<steps.length;j++){
-                            var _step = steps[j];
-                            var tmcsPaths = _step.tmcsPaths;
-                            for(var m = 0;m<tmcsPaths.length;m++){
-                                var _coord = [];
-                                var path = tmcsPaths[m].path;
-                                for(var k=0;k<path.length;k++){
-                                    var _path = path[k];
-                                    _coord.push([_path.lng, _path.lat])
-                                }
-                                var pathF = new ol.Feature(new ol.geom.LineString(_coord));
-                                pathF.status = tmcsPaths[m].status;
-                                setPathStyle(pathF);
-                                features.push(pathF);
-                            }
-                        }
-                    }
+<script type="text/javascript">
+    new Vue({
+        el: '#app',
+        data:{
+            size:'20%',
+            drawer: false,
+            tableData:[],
+            marks:[],
+            styleInfo:'',
+            multipleSelection:[]
+        },
+        mounted(){
+            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"1482d829b9194697b83f"});
+            this.loadModelRelationData('POST',configpre.map_loadModelRelation);
+            this.getHeight();
+        },
+        methods:{
+            getHeight:function(){
+                let width = this.$refs.mymap.offsetWidth;
+                //384为1920宽的20%大小,且为抽屉效果的最小宽度
+                let percent = 384/width;
+                console.info(width+','+percent);
+                if(percent>0.2){
+                    this.size=parseInt(percent*100)+'%';
                 }
-                addSearcheLayer(features,olMap);
-            } else {
-                log.error('获取驾车数据失败：' + result)
-            }
-        });
-    }
+            },
+            addMarksByCoords:function(data){
+                cleanMarks();
+                data.forEach(item=>{
+                    if(this.form.marks==item.name){
+                        addMarksV2(item.coord);
+                    }
+                });
 
+            },
+            handleClose:function(done) {
+                done();
+            },
+            submitForm:function(type) {
+                if(type=='sure'){
+                    this.addMarksByCoords(this.marks);
+                }
+                this.drawer=false;
+            },
+            rquestParams:function(method,api,data){
+                var jsonDataList={
+                    httpMethod:method,
+                    url:api,
+                    data:data?JSON.stringify(data):''
+                };
+                return jsonDataList;
+            },
+            loadGisData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        var body = json.body;
+                        var baseInfo = JSON.parse(body.BASE_INFO);
+                        var styleInfo = JSON.parse(body.STYLE_INFO);
+                        me.styleInfo = styleInfo;
+                        var cfgs = baseInfo;
+                        for(var p in styleInfo){cfgs[p] = styleInfo[p];}
+                        initMap(cfgs);
+                    }
+                });
+            },
+            loadModelRelationData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        me.tableData = [];
+                        let marksHeadData = json.body.markList||[];
+                        let hotMapData = json.body.hotMapList||[];
+                        me.tableData = me.tableData.concat(marksHeadData).concat(hotMapData);
+                    }
+                });
+            },
+            toggleSelection:function(){
+                cleanMarks();
+                this.$refs.multipleTable.clearSelection();
+            },
+            handleSelectionChange:function(val){
+                this.multipleSelection = val;
+            },
+            showMap:function(){
+                if(this.multipleSelection.length==0){
+                    this.myMessage('请选择数据','warning');
+                    return;
+                }
+                var params = {modelRelation:this.multipleSelection};
+                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
+            },
+            /**
+             * msg：提示信息
+             * type：消息类型：success：成功；error：错误；warning：警告；
+             * */
+            myMessage:function(msg,type) {
+                this.$message({
+                    message: msg,
+                    type: type
+                });
+            },
+            loadTableData:function(method,api,data){
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        let body = json.body;
+                        cleanMarks();
+                        body.forEach(item=>{
+                            let cfgs = item.style;
+                            if(typeof(cfgs)=='string'){
+                                cfgs = JSON.parse(item.style);
+                            }
+                            let datas = item.data;
+                            datas.forEach(data=>{
+                                let coords = eval(data.COORDS);
+                                cfgs['lng']=coords[0];
+                                cfgs['lat']=coords[1];
+                                addMarksV2(cfgs);
+                            });
+                        });
+                        me.drawer =false;
+                    }
+                });
+            }
+
+        }
+    });
 </script>
 </body>
 </html>
