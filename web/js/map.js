@@ -52,7 +52,7 @@ function addTextStyle(cfg){
         text: cfg.name||'',
         //填充样式
         fill: new ol.style.Fill({
-            color: cfg.fillColor||'#ff241c'
+            color: cfg.fillColor||'#409EFF'
         }),
         //笔触
         // stroke: new ol.style.Stroke({
@@ -78,13 +78,6 @@ function gaodeLayers(url){
         })
     });
     this.amapLayer = amapLayer;
-    // var layers = [
-    //     new ol.layer.Tile({
-    //         source: new ol.source.XYZ({
-    //             url: url||'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
-    //         })
-    //     })
-    // ];
     return this.amapLayer;
 }
 function addMapArea(jsonAreaCode){
@@ -92,15 +85,12 @@ function addMapArea(jsonAreaCode){
         title: 'add Layer',
         source: new ol.source.Vector({
             projection: 'EPSG:4326',
-            url: path+"static/data/"+jsonAreaCode.areaCode+'.json', //GeoJSON的文件路径，用户可以根据需求而改变
+            url: configpre.webGisPath+"static/data/"+jsonAreaCode.areaCode+'.json', //GeoJSON的文件路径，用户可以根据需求而改变
             format: new ol.format.GeoJSON()
         }),
         style:function (feature, resolution) {
             var areaCfg = feature.values_;
             var color = jsonAreaCode.areaColor;
-            // if(areaCfg.name=='天河区' || areaCfg.name=='增城区'){
-            //     color = '#3FC012';
-            // }
             return new ol.style.Style({
                 fill:this.fillBgColor(color),
                 text:this.addTextStyle(areaCfg),
@@ -121,7 +111,7 @@ function initMap(cfgs){
 
     if(cfgs.otherMap=='1'){
         if(cfgs.mapType=='amap'){
-            this.gaodeLayers('http://127.0.0.1:8120/hub/static/imgXYZ/'+cfgs.mapType+'/{z}-{x}-{y}.jpg');
+            this.gaodeLayers(configpre.api_rootPath+'static/imgXYZ/'+cfgs.mapType+'/{z}-{x}-{y}.jpg');
             layers.push(this.amapLayer);
         }else if(cfgs.mapType=='bmap'){
             //FIXME
@@ -144,7 +134,7 @@ function initMap(cfgs){
     });
     this.setMyStyle(map,jsonAreaCode);
     this.addEvent(jsonAreaCode,map);
-    var dataURL = path+'static/data/'+jsonAreaCode.upAreaCode+'.json'
+    var dataURL = configpre.webGisPath+'static/data/'+jsonAreaCode.upAreaCode+'.json'
     this.addconver(dataURL,jsonAreaCode);
     this.map = map;
     return this.map;
@@ -154,32 +144,32 @@ function addEvent(jsonAreaCode,map){
         return;
     }
     var me = this;
-    jsonAreaCode.events.forEach(event=>{
-        if(event=='singleclick'){
-            map.on(event, function (evt) {
+    jsonAreaCode.events.forEach(element=>{
+        if(element=='singleclick'){
+            map.on(element, function (evt) {
                 //地图绑定单击事件
                 me.singleClick(evt);
             });
-        }else if(event=='pointermove'){
+        }else if(element=='pointermove'){
             var converLayer = this.converLayer;
             var featureOverlay = this.featureOverlay(map);
             //地图绑定鼠标滑过事件
-            map.on(event, function (evt) {
+            map.on(element, function (evt) {
                 me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
             });
-        }else if(event=='moveend'){
+        }else if(element=='moveend'){
             var addPointStatus = false;
             var params = {
                 areaCode:jsonAreaCode.areaCode
             };
             var jsonDataList ={
                 httpMethod:'POST',
-                url:apiRootPath+'map/getOrganInfoByAreaCode.html',
+                url:configpre.map_getOrganInfoByAreaCode,
                 data:JSON.stringify(params)
             }
             ajaxrequestasync(jsonDataList,function(code,msg,json){
                 if(code=='200'){
-                    map.on(event,function(e){
+                    map.on(element,function(e){
                         var zoom = map.getView().getZoom();  //获取当前地图的缩放级别
                         if(zoom >= 13){
                             if(!addPointStatus){
@@ -198,7 +188,6 @@ function addEvent(jsonAreaCode,map){
                     });
                 }
             });
-
         }
     });
     // var addPointStatus = false;
@@ -409,6 +398,54 @@ function addPoint(lng,lat,lableName){
     }));
     this.layer.getSource().addFeature(anchor);
     return anchor;
+}
+function addMarksV2(cfgs){
+    debugger;
+    if(!this.layer){
+        return;
+    }
+    // 创建一个Feature，并设置好在地图上的位置
+    var anchor = new ol.Feature({
+        geometry: new ol.geom.Point([cfgs.lng,cfgs.lat])
+    });
+    // 设置样式，在样式中就可以设置图标
+    var image;
+    if(cfgs.iconStatus){
+        image = new ol.style.Icon({
+            opacity: cfgs.opacity||0.7,
+            src: configpre.webGisPath+'static/icon/'+cfgs.iconName+'.'+cfgs.iconType||'jpg'
+        });
+    }else{
+        image=new ol.style.Circle({
+            radius: cfgs.radius||4,
+            fill: new ol.style.Fill({
+                color: cfgs.imageColor||'#3392F4'
+            })
+        });
+    }
+    anchor.setStyle(new ol.style.Style({
+        image:image,
+        text: new ol.style.Text({
+            //对齐方式
+            textAlign: cfgs.textAlign||'center',
+            //文本基线
+            textBaseline: cfgs.textBaseline||'middle',
+            //字体样式
+            font: cfgs.font||'normal 14px 微软雅黑',
+            //文本内容
+            text: cfgs.displayNameStatus?cfgs.text||'':'',
+            //填充样式
+            fill: new ol.style.Fill({
+                color: cfgs.textFillColor||'#FDF9FE'
+            }),
+            //笔触
+            // stroke: new ol.style.Stroke({
+            //     color: cfgs.textStrokeColor||'#ffcc33',
+            //     width: cfgs.textStrokeWidth||2
+            // })
+        })
+    }));
+    this.layer.getSource().addFeature(anchor);
 }
 function addMarks(lableName,coord,iconName){
     if(!this.layer){

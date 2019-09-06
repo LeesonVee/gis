@@ -12,6 +12,7 @@
     <script src="js/jquery-2.2.3.min.js"></script>
     <script type="text/javascript" src="js/ajaxrequestasync.js"></script>
     <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
     <script src="js/bootstrap.js"></script>
     <link rel="stylesheet" href="css/ol.css" type="text/css">
     <script src="js/ol.js"></script>
@@ -29,19 +30,7 @@
             width:100%;
             height:100%;
         }
-        .el-container:nth-child(5).el-aside,.el-container:nth-child(6){
-            width: auto;
-        }
-        .el-container:nth-child(7){
-            width: auto;
-        }
-        .el-aside{
-            width: auto;
-            border:1px solid #dce6d4;
-            background-color: #fff;
-            text-align:center;
-        }
-        .el-main{
+        .my-el-main{
             color:#333;
             text-align:center;
             width:100%;
@@ -49,10 +38,16 @@
             padding: 0px;
             margin: 0px;
         }
+
         .el-footer {
             background-color: #B3C0D1;
             color: #333;
             text-align: center;
+            line-height: 60px;
+        }
+        .el-header {
+            background-color: #B3C0D1;
+            color: #333;
             line-height: 60px;
         }
     </style>
@@ -60,12 +55,12 @@
 <body>
 <div id="app">
     <el-container>
-        <el-main>
+        <el-main class="my-el-main">
             <div :id="form.target" style="width: 100%;height: 100%;"></div>
         </el-main>
         <el-aside width="400px">
             <el-container>
-                <el-main>
+                <el-main class="my-el-main">
                     <el-form ref="form" :model="form" :rules="rules" label-width="100px" style="margin: 10px 2px 0px 0px;">
                         <el-tabs v-model="activeName">
                             <el-tab-pane label="基础设置" name="systemBase">
@@ -76,7 +71,7 @@
                                     <el-input v-model="form.target" @change="targetChange" onkeyup="this.value=this.value.replace(/[^\w\.\/]/ig,'');"></el-input>
                                 </el-form-item>
                                 <el-form-item label="显示级别" prop="levels" style="text-align: left;">
-                                    <el-select v-model="form.levels"  placeholder="请选择最大显示级别">
+                                    <el-select v-model="form.levels"  placeholder="请选择最大显示级别" @change="areaCodeLevelsChange">
                                         <el-option label="省级" value="province"></el-option>
                                         <el-option label="市级" value="city"></el-option>
                                         <el-option label="区级" value="district"></el-option>
@@ -87,8 +82,9 @@
                                     <div>
                                         <el-col :span="8">
                                             <el-form-item prop="province">
-                                                <el-select v-model="form.province"  placeholder="请选择">
-                                                    <el-option label="广东省" value="440000"></el-option>
+                                                <el-select v-model="form.province"  placeholder="请选择" @change="areaCodeChange('province')">
+                                                    <!--<el-option label="广东省" value="440000"></el-option>-->
+                                                    <el-option v-for="item in provinceOption" :key="item.AREA_CODE" :label="item.AREA_CODE_NAME" :value="item.AREA_CODE"></el-option>
                                                 </el-select>
                                             </el-form-item>
                                         </el-col>
@@ -97,8 +93,9 @@
                                         <el-col class="line" :span="1">-</el-col>
                                         <el-col :span="7">
                                             <el-form-item prop="city">
-                                                <el-select v-model="form.city"  placeholder="请选择">
-                                                    <el-option label="广州市" value="440100"></el-option>
+                                                <el-select v-model="form.city"  placeholder="请选择" @change="areaCodeChange('city')">
+                                                    <!--<el-option label="广州市" value="440100"></el-option>-->
+                                                    <el-option v-for="item in cityOption" :key="item.AREA_CODE" :label="item.AREA_CODE_NAME" :value="item.AREA_CODE"></el-option>
                                                 </el-select>
                                             </el-form-item>
                                         </el-col>
@@ -107,8 +104,9 @@
                                         <el-col class="line" :span="1">-</el-col>
                                         <el-col :span="7">
                                             <el-form-item prop="district">
-                                                <el-select v-model="form.district" placeholder="请选择">
-                                                    <el-option label="天河区" value="440106"></el-option>
+                                                <el-select v-model="form.district" placeholder="请选择" @change="areaCodeChange('district')">
+                                                    <!--<el-option label="天河区" value="440106"></el-option>-->
+                                                    <el-option v-for="item in districtOption" :key="item.AREA_CODE" :label="item.AREA_CODE_NAME" :value="item.AREA_CODE"></el-option>
                                                 </el-select>
                                             </el-form-item>
                                         </el-col>
@@ -189,6 +187,46 @@
                                     </el-col>
                                 </el-form-item>
                             </el-tab-pane>
+                            <el-tab-pane label="数据绑定" name="bindData">
+                                <el-collapse v-model="activeDatas">
+                                    <el-collapse-item title="标注" name="1">
+                                        <el-row>
+                                            <el-col :span="24">
+                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('标注','新增')"></i>
+                                                </div>
+                                            </el-col>
+                                        </el-row>
+                                        <el-row>
+                                            <el-table :data="marksHeadData" border style="width: 100%" size="mini" max-height="350">
+                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                <!--<el-table-column prop="MODEL_RELATION_TYPE" label="类别" width="80">-->
+                                                    <!--<template slot-scope="scope">-->
+                                                        <!--<el-tag :type="scope.row.MARKS_STYLE_TYPE === '0' ? 'primary' : 'success'" disable-transitions>{{scope.row.MARKS_STYLE_TYPE === '0'?'默认':'自定义'}}</el-tag>-->
+                                                    <!--</template>-->
+                                                <!--</el-table-column>-->
+                                                <el-table-column label="样式设置">
+                                                    <template slot-scope="scope">
+                                                        <el-button @click="showMarks(scope.$index,scope.row)" type="text" size="small">显示</el-button>
+                                                        <el-button @click="modifyClick(scope.$index,scope.row)" type="text" size="small">修改</el-button>
+                                                        <el-button @click="delModelRelation(scope.$index,scope.row)" type="text" size="small">删除</el-button>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+
+                                        </el-row>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="热力图" name="2">
+                                        <el-row>
+                                            <el-col :span="24">
+                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('热地图','新增')"></i>
+                                                </div>
+                                            </el-col>
+                                        </el-row>
+                                    </el-collapse-item>
+                                </el-collapse>
+                            </el-tab-pane>
                         </el-tabs>
                     </el-form>
                 </el-main>
@@ -202,18 +240,194 @@
 
         </el-aside>
     </el-container>
+
+    <el-dialog :title="dialogDataOperate+title" :visible.sync="dialogDatabing" width="50%">
+        <el-container style="height: 500px; border: 1px solid #eee;">
+            <el-aside width="300px" style="background-color: rgb(238, 241, 246)">
+                <el-collapse v-model="activeDataModel">
+                    <el-collapse-item v-for="(item,index) in modelData" :name="index">
+                        <template slot="title">
+                            <div style="font-weight: bold;margin-left: 15px;">{{item.DNAME}}</div>
+                        </template>
+                        <el-row v-for="childItem in item.CHILD">
+                            <el-col :span="1">&nbsp;</el-col>
+                            <el-col :span="22"><el-radio v-model="modelRadio" :label="childItem.MID" @change="modelChange(childItem.MID,childItem.EN_NAME)">{{childItem.MNAME}}</el-radio></el-col>
+                            <el-col :span="1">&nbsp;</el-col>
+                            <el-col :span="24">&nbsp;</el-col>
+                        </el-row>
+                    </el-collapse-item>
+                </el-collapse>
+            </el-aside>
+
+            <el-container>
+                <el-header style="text-align: left; font-size: 12px">
+                    <span>表单信息</span>
+                </el-header>
+
+                <el-main>
+                    <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="90px" v-if="modelRadio!=''">
+                        <el-form-item :label="title+'名称'" prop="name">
+                            <el-col :span="12"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
+                            <el-col :span="2">&nbsp;</el-col>
+                            <el-col :span="10"><el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch></el-col>
+                        </el-form-item>
+                        <el-form-item label="地址绑定" prop="addressCol">
+                            <el-select v-model="formMarks.addressCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="地理位置" prop="coordCol">
+                            <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="值绑定" prop="valCol">
+                            <el-select v-model="formMarks.valCol" placeholder="请选择字段">
+                                <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="样式选择">
+                            <el-radio-group v-model="formMarks.styleType">
+                                <el-radio :label="0">默认</el-radio>
+                                <el-radio :label="1">自定义</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <div v-if="formMarks.styleType=='1'">
+                            <el-form-item label="显示方式">
+                                <el-radio-group v-model="formMarks.iconStatus" @change="changeIconRadio">
+                                    <el-radio :label="0">默认圆点</el-radio>
+                                    <el-radio :label="1">图标</el-radio>
+                                </el-radio-group>
+                            </el-form-item>
+                            <div v-if="formMarks.iconStatus=='0'" style="text-align: left;">
+                                <el-form-item label="原点大小">
+                                    <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
+                                </el-form-item>
+                                <el-form-item label="原点颜色">
+                                    <el-color-picker v-model="formMarks.imageColor"></el-color-picker>
+                                </el-form-item>
+                                <el-form-item label="文字颜色">
+                                    <el-color-picker v-model="formMarks.textFillColor"></el-color-picker>
+                                </el-form-item>
+                                <el-form-item label="阴影颜色">
+                                    <el-color-picker v-model="formMarks.textStrokeColor"></el-color-picker>
+                                </el-form-item>
+                                <el-form-item label="阴影大小">
+                                    <el-input-number v-model="formMarks.textStrokeWidth" :min="1" :max="10"></el-input-number>
+                                </el-form-item>
+                            </div>
+                            <div v-else style="text-align: left;">
+                                <el-form-item label="图标清单" prop="iconData">
+                                    <el-select v-model="formMarks.iconData" placeholder="请选择图标" @change="iconChangeData">
+                                        <el-option v-for="(item,index) in iconList" :key="index" :label="item.iconNameCn" :value="index"></el-option>
+                                        <!--<el-option label="区域一" value="shanghai"></el-option>-->
+                                        <!--<el-option label="区域二" value="beijing"></el-option>-->
+                                    </el-select>
+                                </el-form-item>
+                            </div>
+                        </div>
+                    </el-form>
+                </el-main>
+            </el-container>
+        </el-container>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogDatabing = false">取 消</el-button>
+            <el-button type="primary" @click="submitDialogForm('formMarks')">确 定</el-button>
+        </div>
+    </el-dialog>
 </div>
 <script type="text/javascript">
     //天河
 //    var apiRootPath='http://10.195.237.115:8120/hub/';
 //    var path = 'http://10.195.237.116:8140/gis/';
-    var apiRootPath='http://127.0.0.1:8120/hub/';
-    var path = 'http://127.0.0.1:8140/gis/';
+//    var apiRootPath='http://10.32.0.169:8120/hub/';
+//    var path = 'http://10.32.0.169:8140/gis/';
     new Vue({
         el: '#app',
         data:{
+            dialogDataOperate:'',
+            dialogDatabing:false,
+            activeDataModel:[],
+            modelRadio:'',
+            modelRadioEnName:'',
+            modelData:[
+//                {
+//                    DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
+//                    DNAME: "HCMS_HUB",
+//                    CHILD:[{
+//                        COMMENTS: "ZSRK_LRCSPM",
+//                        DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
+//                        DNAME: "HCMS_HUB",
+//                        EN_NAME: "ZSRK_LRCSPM",
+//                        MID: "7ac1dcba0b2e4824b3d1",
+//                        MNAME: "ZSRK_LRCSPM（中山人口_流入城市排名）"
+//                    },{
+//                        COMMENTS: "ZSRK_LRCSPM1",
+//                        DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
+//                        DNAME: "HCMS_HUB",
+//                        EN_NAME: "ZSRK_LRCSPM",
+//                        MID: "7ac1dcba0b2e4824b3d123",
+//                        MNAME: "ZSRK_LRCSPM（中山人口）"
+//                    }
+//                    ]
+//                }
+            ],
+            dimensionColList:[],
+            metricColList:[],
+            iconList:[],
+            formLabelWidth: '120px',
             pkey:'',
             activeName:'systemBase',
+            activeDatas:['1'],
+            marksHeadData:[],
+            hotMapData:[],
+            title:'标注',
+            dialogFormVisible:false,
+            formMarks:{
+                name:'',
+                displayNameStatus:true,
+                addressCol:'',
+                coordCol:'',
+                valCol:'',
+                styleType:0,
+                status:'1',
+                iconStatus:0,
+                opacity:0.7,
+                iconData:'',
+                iconName:'',
+                iconType:'',
+                radius:4,
+                imageColor:'#3392F4',
+                textAlign:'center',
+                textBaseline:'middle',
+                font:'normal 14px 微软雅黑',
+                text:'',
+                textFillColor:'#FDF9FE',
+                textStrokeColor:'#ffcc33',
+                textStrokeWidth:2,
+                status:'1',
+                opt:'add',
+                MODEL_RELATION_ID:''
+            },
+            dialogRules:{
+                name: [
+                    { required: true, message: '请输入名称', trigger: 'blur' },
+                    { min: 3, max: 15, message: '长度在 3 到 15 个字符', trigger: 'blur' }
+                ],
+                addressCol:[
+                    { required: true, message: '请选择地址', trigger: 'change' }
+                ],
+                coordCol:[
+                    { required: true, message: '请选择地理位置', trigger: 'change' }
+                ],
+                valCol:[
+                    { required: true, message: '请选择值', trigger: 'change' }
+                ],
+                iconName:[
+                    { required: true, message: '请选择图标', trigger: 'change' }
+                ]
+            },
+            modifyIndex:-1,
             form:{
                 name:'',
                 target:'map',
@@ -221,8 +435,10 @@
                 province:'',
                 city:'',
                 district:'',
-                lng:'113.335367',
-                lat:'23.13559',
+                lng:'',
+//                lng:'113.335367',
+//                lat:'23.13559',
+                lat:'',
                 zoom:'',
                 projection:'EPSG:4326',
                 otherMap:0,
@@ -291,8 +507,17 @@
                 baseInfo:{},
                 styleInfo:{}
             },
-            showMap:false
-
+            showMap:false,
+            areaCodes:[],
+            provinces:[],
+            provinceOption:[],
+            citys:[],
+            cityOption:[],
+            districts:[],
+            districtOption:[]
+        },
+        created(){
+            this.loadParam();
         },
         methods:{
             targetChange:function(val){
@@ -321,7 +546,7 @@
                             this.saveGisData('POST',apiRootPath+'map/saveMapData.html',params);
                         }
                     } else {
-                        if(this.activeName='systemStyle'){
+                        if(this.activeName=='systemStyle' || this.activeName=='bindData'){
                             this.myMessage('请完善【基础设置】数据','error');
                         }
                         return false;
@@ -329,7 +554,6 @@
                 });
             },
             resetForm:function(formName) {
-                debugger;
                 this.$refs[formName].resetFields();
                 this.form.otherMap=0;
                 this.form.events=[];
@@ -437,7 +661,7 @@
                     fileType:fileType,
                     data:html,
                 }
-                var fileJsonData=this.rquestParams('POST',apiRootPath+'map/createFile.html',fileInfor);
+                var fileJsonData=this.rquestParams('POST',configpre.map_createFile,fileInfor);
                 var me = this;
                 ajaxrequestasync(fileJsonData,function(code,msg,json){
                     if(code=='200'){
@@ -454,6 +678,334 @@
                         });
                     }
                 })
+            },
+            loadParam:function(){
+                //加载行政区划数据
+                this.loadAreaCode('POST',configpre.map_loadAreaCodeData);
+                //加载标注数据
+                this.loadModelRelationData('POST',configpre.map_loadModelRelation);
+                //
+                this.loadModelData('POST',configpre.api_loadModelDataWithLayout);
+            },
+            initDialogParam:function(init){
+                if(init){
+                    this.modelRadio='';
+                    this.modelRadioEnName = '';
+                }
+                this.modifyIndex=-1;
+                this.dimensionColList=[];
+                this.metricColList=[];
+                this.formMarks.name='';
+                this.formMarks.displayNameStatus=true;
+                this.formMarks.addressCol='';
+                this.formMarks.coordCol='';
+                this.formMarks.valCol='';
+                this.formMarks.styleType=0;
+                this.formMarks.status='1';
+                this.formMarks.iconStatus=0;
+                this.formMarks.opacity=0.7;
+                this.formMarks.iconData='';
+                this.formMarks.iconName='disease';
+                this.formMarks.iconType='jpg';
+                this.formMarks.radius=4;
+                this.formMarks.imageColor='#3392F4';
+                this.formMarks.textAlign='center';
+                this.formMarks.textBaseline='middle';
+                this.formMarks.font='normal 14px 微软雅黑';
+                this.formMarks.text='';
+                this.formMarks.textFillColor='#FDF9FE';
+                this.formMarks.textStrokeColor='#ffcc33';
+                this.formMarks.textStrokeWidth=2;
+            },
+            loadAreaCode:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        me.provinces = json.body.provinces;
+                        me.provinceOption = json.body.provinces;
+                        me.citys = json.body.citys;
+                        me.districts = json.body.districts;
+                    }
+                });
+            },
+            loadModelRelationData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                       me.marksHeadData = json.body.markList||[];
+                       me.hotMapData = json.body.hotMapList||[];
+                    }
+                });
+            },
+            loadModelData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        me.modelData = json.body;
+                        for(let i=0,length=me.modelData.length;i<length;i++){
+                            me.activeDataModel.push(i);
+                        }
+                    }
+                });
+            },
+            saveMarksData:function(data,index){
+                let me = this;
+                let type = this.formMarks.opt;
+                let dataType = data.MODEL_RELATION_TYPE;
+                let jsonDataList = this.rquestParams('POST',configpre.map_saveModelRelation,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        let msg = '修改成功';
+                        if(type=='delete'){
+                            msg="删除成功";
+                            if(dataType=='1'){
+                                me.marksHeadData.splice(index,1);
+                            }else if(dataType=='2'){
+                                me.hotMapData.splice(index,1);
+                            }
+                        }else if(type=='add'){
+                            msg="添加成功";
+                            data.MODEL_RELATION_ID=json.body;
+                            if(dataType=='1'){
+                                me.marksHeadData.push(data);
+                            }else if(dataType=='2'){
+                                me.hotMapData.push(data);
+                            }
+                        }else if(type=='modify'){
+                            msg = '修改成功';
+                            if(dataType=='1'){
+                                me.marksHeadData.splice(index,1,data);
+                            }else if(dataType=='2'){
+                                me.hotMapData.splice(index,1,data);
+                            }
+                        }
+                        me.myMessage(msg,'success');
+                    }else{
+                        me.myMessage('操作失败','error');
+                    }
+                });
+            },
+            areaCodeChange:function(type){
+                if(type=='province'){
+                    this.form.city = '';
+                    this.form.district = '';
+                    this.cityOption=[];
+                    this.districtOption=[];
+                    this.citys.forEach(city=>{
+                        if(city.AREA_CODE_PARENT==this.form.province){
+                            this.cityOption.push(city);
+                        }
+                    });
+                }else if(type=='city'){
+                    this.form.district = '';
+                    this.districtOption=[];
+                    this.districts.forEach(district=>{
+                        if(district.AREA_CODE_PARENT==this.form.city){
+                            this.districtOption.push(district);
+                        }
+                    });
+                }
+                if(this.form.levels==type || (this.form.levels=='street' && type=='district')){
+                    this.setMapCenter(type);
+                }
+            },
+            areaCodeLevelsChange:function(val){
+                this.form.lng = '';
+                this.form.lat = '';
+                this.setMapCenter(val);
+            },
+            setMapCenter:function(type){
+                var data=[];
+                var areaCode;
+                if(type=='province'){
+                    data = this.provinceOption;
+                    areaCode = this.form.province;
+                }else if(type=='city'){
+                    data = this.cityOption;
+                    areaCode = this.form.city;
+                }else if(type=='district' || type=='street'){
+                    data = this.districtOption;
+                    areaCode = this.form.district;
+                }
+                data.forEach(item=>{
+                    if(item.AREA_CODE==areaCode){
+                        this.form.lng = item.LNG;
+                        this.form.lat = item.LAT;
+                    }
+                });
+            },
+            openWin:function(dataType,optType,row){
+                if(!this.showMap){
+                    this.myMessage('请先创建地图','warning');
+                    return;
+                }
+                this.dialogDatabing = true;
+                this.dialogDataOperate = optType;
+                this.title = dataType;
+                this.formMarks.status='1';
+                if(optType=='新增'){
+                    this.initDialogParam(true);
+                    this.formMarks.opt='add';
+                }else if(optType=='修改'){
+                    let params = {
+                        MODEL_ID: row.MODEL_ID,
+                        TABLE_NAME: row.TABLE_NAME
+                    };
+                    this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params);
+                    this.modelRadio = row.MODEL_ID;
+                    this.formMarks.name=row.MODEL_RELATION_NAME;
+                    this.formMarks.addressCol=row.RELATION_DIM_ADDRESS;
+                    this.formMarks.coordCol=row.RELATION_DIM_COOR;
+                    this.formMarks.valCol=row.RELATION_MEASURE_VAL;
+                    this.formMarks.opt='modify';
+                    this.formMarks.MODEL_RELATION_ID=row.MODEL_RELATION_ID;
+                    var styleData = row.MODEL_STYLE_DATA;
+                    if(typeof(row.MODEL_STYLE_DATA) == "string"){
+                        styleData = JSON.parse(row.MODEL_STYLE_DATA);
+                    }
+                    for(var p in styleData){
+                        this.formMarks[p] = styleData[p];
+                    }
+                }
+            },
+            openAddMarksWin:function(){
+//                this.dialogFormVisible = true;
+                this.dialogDatabing = true;
+            },
+            saveDialogData:function(index){
+                let data ={};
+                let formMarks = this.formMarks;
+                let marksStyleData = {};
+                marksStyleData['iconStatus'] = formMarks.iconStatus;
+                marksStyleData['opacity'] = formMarks.opacity;
+                marksStyleData['iconName'] = formMarks.iconName;
+                marksStyleData['iconType'] = formMarks.iconType;
+                marksStyleData['radius'] = formMarks.radius;
+                marksStyleData['imageColor'] = formMarks.imageColor;
+                marksStyleData['textAlign'] = formMarks.textAlign;
+                marksStyleData['textBaseline'] = formMarks.textBaseline;
+                marksStyleData['font'] = formMarks.font;
+                marksStyleData['text'] = formMarks.name;
+                marksStyleData['textFillColor'] = formMarks.textFillColor;
+                marksStyleData['textStrokeColor'] = formMarks.textStrokeColor;
+                marksStyleData['textStrokeWidth'] = formMarks.textStrokeWidth;
+                marksStyleData['styleType'] = formMarks.styleType;
+                marksStyleData['displayNameStatus'] = formMarks.displayNameStatus;
+                data['MODEL_RELATION_NAME']=formMarks.name;
+                if(this.title=='标注'){
+                    data['MODEL_RELATION_TYPE']='1';
+                }else if(this.title=='热力图'){
+                    data['MODEL_RELATION_TYPE']='2';
+                }
+                if(formMarks.opt=='modify'){
+                    data['MODEL_RELATION_ID'] = formMarks.MODEL_RELATION_ID;
+                }
+                data['STATUS'] = formMarks.status;
+                data['MODEL_ID']=this.modelRadio;
+                data['TABLE_NAME']=this.modelRadioEnName;
+                data['RELATION_DIM_COOR']=formMarks.coordCol;
+                data['RELATION_DIM_ADDRESS']=formMarks.addressCol;
+                data['RELATION_MEASURE_VAL']=formMarks.valCol;
+                data['MODEL_STYLE_DATA']=marksStyleData;
+                this.saveMarksData(data,index);
+            },
+            modifyClick:function(index, row){
+                this.modifyIndex=index;
+                this.modelRadioEnName = row.TABLE_NAME;
+                this.openWin('标注','修改',row);
+            },
+            showMarks:function(index,row){
+//                if(!this.showMap){
+//                    this.myMessage('请先创建地图','warning');
+//                    return;
+//                }
+                var params = {modelRelation:[row]};
+                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
+            },
+            delModelRelation:function(index,row){
+                row['STATUS'] ='0';
+                this.formMarks.opt='delete';
+                this.saveMarksData(row,index);
+            },
+            modelChange:function(modelId,tableName){
+                this.initDialogParam();
+                this.modelRadioEnName = tableName;
+                let params = {
+                    MODEL_ID: modelId,
+                    TABLE_NAME: tableName
+                };
+                this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params);
+            },
+            loadModelColumnData:function(method,api,data){
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        let body = json.body;
+                        me.dimensionColList = body.dimensionColList;
+                        me.metricColList = body.metricColList;
+                    }
+                });
+            },
+            loadTableData:function(method,api,data){
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        let body = json.body;
+                        cleanMarks();
+                        body.forEach(item=>{
+                            let cfgs = item.style;
+                            if(typeof(cfgs)=='string'){
+                                cfgs = JSON.parse(item.style);
+                            }
+                            let datas = item.data;
+                            datas.forEach(data=>{
+                                debugger;
+                                let coords = eval(data.COORDS);
+                                cfgs['lng']=coords[0];
+                                cfgs['lat']=coords[1];
+                                console.info(cfgs);
+                                addMarksV2(cfgs);
+                            });
+                        });
+                    }
+                });
+            },
+            submitDialogForm:function(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if(valid){
+                        this.saveDialogData(this.modifyIndex);
+                        this.dialogDatabing = false;
+                    }else{
+                        return false;
+                    }
+                })
+            },
+            iconChangeData:function(index){
+                debugger;
+                var item = this.iconList[index];
+                this.formMarks.iconName = item.iconName;
+                this.formMarks.iconType = item.iconType;
+            },
+            changeIconRadio:function(val){
+                debugger;
+                if(val == '1'){
+                    if(this.iconList.length==0){
+                        this.loadIconData('POST',configpre.map_getGisIcon);
+                    }
+                }
+            },
+            loadIconData:function(method,api,data){
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.iconList= json.body||[];
+                    }
+                });
             }
         }
     });
