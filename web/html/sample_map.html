@@ -3,37 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" href="../css/bootstrap.css" type="text/css">
     <link rel="stylesheet" href="../css/ol.css" type="text/css">
     <script type="text/javascript" src="../js/ajaxrequestasync.js"></script>
     <script type="text/javascript" src="../js/ajaxrequestsync.js"></script>
+    <script type="text/javascript" src="../js/config.js"></script>
     <script src="../js/jquery-2.2.3.min.js"></script>
     <script src="../js/bootstrap.js"></script>
     <script src="../js/ol.js"></script>
     <script src="../js/map.js"></script>
-    <style type="text/css">head,body{width: 100%;height: 100%;}</style>
+    <link rel="stylesheet" href="../css/element.css">
+    <!-- 引入组件库 -->
+    <script type="text/javascript" src="../js/vue.min.js"></script>
+    <script src="../js/element.js"></script>
+    <style type="text/css">
+        html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
+        .fullScreen{
+            width: 100%;
+            height: 100%;
+        }
+        .show_right {
+            display: block;
+            cursor: pointer;
+            width: 12px;
+            height: 12px;
+            position: absolute;
+            top: 0px;
+            right: 15px;
+        }
+    </style>
 </head>
 <body>
-<div id="map" style="width: 100%;height: 100%;"></div>
+<div id="app" class="fullScreen">
+    <div id="map" class="fullScreen" ref="mymap"></div>
+    <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
+    <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" :size="size">
+        <el-table ref="multipleTable" :data="tableData" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="350">
+            <el-table-column type="selection" width="55"></el-table-column>
+            <el-table-column label="名称" width="220">
+                <template slot-scope="scope">{{ scope.row.MODEL_RELATION_NAME }}</template>
+            </el-table-column>
+            <el-table-column prop="MODEL_RELATION_TYPE" label="类别">
+                <template slot-scope="scope">
+                    <el-tag :type="scope.row.MODEL_RELATION_TYPE === '1' ? 'primary' : 'success'" disable-transitions>{{scope.row.MODEL_RELATION_TYPE === '1'?'标注':'热力图'}}</el-tag>
+                </template>
+            </el-table-column>
+        </el-table>
+        <div style="margin: 20px 0px 0px 20px;">
+            <el-button type="primary" @click="showMap()">确定</el-button>
+            <el-button type="success" @click="toggleSelection()">重置</el-button>
+        </div>
+    </el-drawer>
+</div>
 <script type="text/javascript">
-    var apiRootPath='http://127.0.0.1:8120/hub/';
-    var path = 'http://localhost:8140/gis/';
-    var jsonDataList ={
-        httpMethod:'POST',
-        url:apiRootPath+'map/getMapByPkey.html',
-        data:JSON.stringify({ID:'2805a1559c8c42caaa7f'})
-    }
-    ajaxrequestasync(jsonDataList,function(code,msg,json){
-        debugger;
-        if(code=='200'){
-            var body = json.body;
-            var baseInfo = JSON.parse(body.BASE_INFO);
-            var styleInfo = JSON.parse(body.STYLE_INFO);
-            var cfgs = baseInfo;
-            for(var p in styleInfo){
-                cfgs[p] = styleInfo[p];
+    new Vue({
+        el: '#app',
+        data:{
+            size:'20%',
+            drawer: false,
+            tableData:[],
+            marks:[],
+            styleInfo:'',
+            multipleSelection:[]
+        },
+        mounted(){
+            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"1482d829b9194697b83f"});
+            this.loadModelRelationData('POST',configpre.map_loadModelRelation);
+            this.getHeight();
+        },
+        methods:{
+            getHeight:function(){
+                let width = this.$refs.mymap.offsetWidth;
+                //384为1920宽的20%大小,且为抽屉效果的最小宽度
+                let percent = 384/width;
+                console.info(width+','+percent);
+                if(percent>0.2){
+                    this.size=parseInt(percent*100)+'%';
+                }
+            },
+            addMarksByCoords:function(data){
+                cleanMarks();
+                data.forEach(item=>{
+                    if(this.form.marks==item.name){
+                        addMarksV2(item.coord);
+                    }
+                });
+
+            },
+            handleClose:function(done) {
+                done();
+            },
+            submitForm:function(type) {
+                if(type=='sure'){
+                    this.addMarksByCoords(this.marks);
+                }
+                this.drawer=false;
+            },
+            rquestParams:function(method,api,data){
+                var jsonDataList={
+                    httpMethod:method,
+                    url:api,
+                    data:data?JSON.stringify(data):''
+                };
+                return jsonDataList;
+            },
+            loadGisData:function(method,api,data){
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        var body = json.body;
+                        var baseInfo = JSON.parse(body.BASE_INFO);
+                        var styleInfo = JSON.parse(body.STYLE_INFO);
+                        me.styleInfo = styleInfo;
+                        var cfgs = baseInfo;
+                        for(var p in styleInfo){cfgs[p] = styleInfo[p];}
+                        initMap(cfgs);
+                    }
+                });
+            },
+            loadModelRelationData:function(method,api,data){
+                debugger;
+                var me = this;
+                var jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        me.tableData = [];
+                        let marksHeadData = json.body.markList||[];
+                        let hotMapData = json.body.hotMapList||[];
+                        me.tableData = me.tableData.concat(marksHeadData).concat(hotMapData);
+                    }
+                });
+            },
+            toggleSelection:function(){
+                cleanMarks();
+                this.$refs.multipleTable.clearSelection();
+            },
+            handleSelectionChange:function(val){
+                this.multipleSelection = val;
+            },
+            showMap:function(){
+                if(this.multipleSelection.length==0){
+                    this.myMessage('请选择数据','warning');
+                    return;
+                }
+                var params = {modelRelation:this.multipleSelection};
+                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
+            },
+            /**
+             * msg：提示信息
+             * type：消息类型：success：成功；error：错误；warning：警告；
+             * */
+            myMessage:function(msg,type) {
+                this.$message({
+                    message: msg,
+                    type: type
+                });
+            },
+            loadTableData:function(method,api,data){
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        let body = json.body;
+                        cleanMarks();
+                        body.forEach(item=>{
+                            let cfgs = item.style;
+                            if(typeof(cfgs)=='string'){
+                                cfgs = JSON.parse(item.style);
+                            }
+                            let datas = item.data;
+                            datas.forEach(data=>{
+                                let coords = eval(data.COORDS);
+                                cfgs['lng']=coords[0];
+                                cfgs['lat']=coords[1];
+                                addMarksV2(cfgs);
+                            });
+                        });
+                        me.drawer =false;
+                    }
+                });
             }
-            initMap(cfgs);
         }
     });
 </script>
