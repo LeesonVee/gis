@@ -15,25 +15,11 @@
     <!-- 引入组件库 -->
     <script type="text/javascript" src="../js/vue.min.js"></script>
     <script src="../js/element.js"></script>
-    <style type="text/css">
-        html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
-        .fullScreen{
-            width: 100%;
-            height: 100%;
-        }
-        .show_right {
-            display: block;
-            cursor: pointer;
-            width: 12px;
-            height: 12px;
-            position: absolute;
-            top: 0px;
-            right: 15px;
-        }
-    </style>
+    <link rel="stylesheet" href="../css/showMap.css">
 </head>
 <body>
 <div id="app" class="fullScreen">
+    <div id="title" class="title_center">{{title}}</div>
     <div id="map" class="fullScreen" ref="mymap"></div>
     <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
     <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" :size="size">
@@ -53,6 +39,21 @@
             <el-button type="success" @click="toggleSelection()">重置</el-button>
         </div>
     </el-drawer>
+    <div class="bottom_right">
+        <div v-for="item in showBottomRight">
+            <el-row v-if="item.isImg" style="margin-top: 5px;">
+                <el-col :span="1">&nbsp;</el-col>
+                <el-col :span="3" style="min-width: 40px;"><img :src="item.imgUrl"/></el-col>
+                <el-col :span="18"><div class="div_middle">{{item.showName}}</div></el-col>
+            </el-row>
+            <el-row v-else style="margin-top: 5px;">
+                <el-col :span="1">&nbsp;</el-col>
+                <el-col :span="3" style="min-width: 40px;"><div class="div_circle" :style="{backgroundColor:item.imageColor}"></div></el-col>
+                <el-col :span="18"><div class="div_middle">{{item.showName}}</div></el-col>
+            </el-row>
+        </div>
+        <div v-else></div>
+    </div>
 </div>
 <script type="text/javascript">
     new Vue({
@@ -63,10 +64,12 @@
             tableData:[],
             marks:[],
             styleInfo:'',
-            multipleSelection:[]
+            multipleSelection:[],
+            title:'',
+            showBottomRight:[]
         },
         mounted(){
-            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"1482d829b9194697b83f"});
+            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"7f32a61e89344a1bb798"});
             this.loadModelRelationData('POST',configpre.map_loadModelRelation);
             this.getHeight();
         },
@@ -80,23 +83,8 @@
                     this.size=parseInt(percent*100)+'%';
                 }
             },
-            addMarksByCoords:function(data){
-                cleanMarks();
-                data.forEach(item=>{
-                    if(this.form.marks==item.name){
-                        addMarksV2(item.coord);
-                    }
-                });
-
-            },
             handleClose:function(done) {
                 done();
-            },
-            submitForm:function(type) {
-                if(type=='sure'){
-                    this.addMarksByCoords(this.marks);
-                }
-                this.drawer=false;
             },
             rquestParams:function(method,api,data){
                 var jsonDataList={
@@ -115,6 +103,7 @@
                         var baseInfo = JSON.parse(body.BASE_INFO);
                         var styleInfo = JSON.parse(body.STYLE_INFO);
                         me.styleInfo = styleInfo;
+                        me.title = body.MAP_NAME;
                         var cfgs = baseInfo;
                         for(var p in styleInfo){cfgs[p] = styleInfo[p];}
                         initMap(cfgs);
@@ -122,7 +111,6 @@
                 });
             },
             loadModelRelationData:function(method,api,data){
-                debugger;
                 var me = this;
                 var jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
@@ -146,7 +134,27 @@
                     this.myMessage('请选择数据','warning');
                     return;
                 }
-                var params = {modelRelation:this.multipleSelection};
+//                showBottomRight:[{
+//                    isImg:false,
+//                    showNames:[],
+//                    imgUrls:[]
+//                }]
+                this.showBottomRight = [];
+
+                this.multipleSelection.forEach(item=>{
+                    let cfgs = {};
+                    cfgs['showName'] = item.MODEL_RELATION_NAME;
+                    let style = JSON.parse(item.MODEL_STYLE_DATA);
+                    let iconStatus = style.iconStatus=='1'?true:false;
+                    cfgs['isImg'] = iconStatus;
+                    if(iconStatus){
+                        cfgs['imgUrl'] = configpre.webGisPath+'static/icon/'+style.iconName+'.'+style.iconType;
+                    }else{
+                        cfgs['imageColor'] = style.imageColor;
+                    }
+                    this.showBottomRight.push(cfgs);
+                });
+                let params = {modelRelation:this.multipleSelection};
                 this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
             },
             /**
@@ -183,6 +191,7 @@
                     }
                 });
             }
+
         }
     });
 </script>

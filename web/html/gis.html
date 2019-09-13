@@ -23,7 +23,7 @@
     <div id="map" class="fullScreen" ref="mymap"></div>
     <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
     <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" :size="size">
-        <el-table ref="multipleTable" :data="tableData" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="350">
+        <el-table ref="multipleTable" :data="tableData" @select="selectCheckBox" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="350">
             <el-table-column type="selection" width="55"></el-table-column>
             <el-table-column label="名称" width="220">
                 <template slot-scope="scope">{{ scope.row.MODEL_RELATION_NAME }}</template>
@@ -37,6 +37,8 @@
         <div style="margin: 20px 0px 0px 20px;">
             <el-button type="primary" @click="showMap()">确定</el-button>
             <el-button type="success" @click="toggleSelection()">重置</el-button>
+            <el-button type="primary" @click="carourselTest()">测试轮播</el-button>
+            <el-button type="primary" @click="closeCarourse()">关闭轮播</el-button>
         </div>
     </el-drawer>
     <div class="bottom_right">
@@ -66,10 +68,12 @@
             styleInfo:'',
             multipleSelection:[],
             title:'',
-            showBottomRight:[]
+            showBottomRight:[],
+            timer:'',
+            isCarousel:false
         },
         mounted(){
-            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"1482d829b9194697b83f"});
+            this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"7f32a61e89344a1bb798"});
             this.loadModelRelationData('POST',configpre.map_loadModelRelation);
             this.getHeight();
         },
@@ -118,13 +122,29 @@
                         me.tableData = [];
                         let marksHeadData = json.body.markList||[];
                         let hotMapData = json.body.hotMapList||[];
-                        me.tableData = me.tableData.concat(marksHeadData).concat(hotMapData);
+                        let carouselList = json.body.carouselList||[];
+                        me.tableData = me.tableData.concat(marksHeadData).concat(hotMapData).concat(carouselList);
                     }
                 });
             },
             toggleSelection:function(){
                 cleanMarks();
                 this.$refs.multipleTable.clearSelection();
+            },
+            selectCheckBox:function(selection, row){
+//                var type = row.MODEL_RELATION_TYPE;
+//                if (selection) {
+//                    selection.forEach(item => {
+//                        if(type != item.MODEL_RELATION_TYPE){
+//                            this.$refs.multipleTable.toggleRowSelection(row,false);
+//                            return;
+//                        }
+//                    });
+//                }
+//                this.multipleSelection = selection.splice(selection.length-1,1);
+                if(row.MODEL_RELATION_TYPE=='4'){
+                    this.isCarousel= true;
+                }
             },
             handleSelectionChange:function(val){
                 this.multipleSelection = val;
@@ -140,8 +160,9 @@
 //                    imgUrls:[]
 //                }]
                 this.showBottomRight = [];
-
+                var type;
                 this.multipleSelection.forEach(item=>{
+                    type = item.MODEL_RELATION_TYPE;
                     let cfgs = {};
                     cfgs['showName'] = item.MODEL_RELATION_NAME;
                     let style = JSON.parse(item.MODEL_STYLE_DATA);
@@ -154,8 +175,8 @@
                     }
                     this.showBottomRight.push(cfgs);
                 });
-                let params = {modelRelation:this.multipleSelection};
-                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
+                let params = {modelRelation:this.multipleSelection,isCarousel:this.isCarousel};
+                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params,type);
             },
             /**
              * msg：提示信息
@@ -167,13 +188,36 @@
                     type: type
                 });
             },
-            loadTableData:function(method,api,data){
+            loadTableData:function(method,api,data,type){
                 let me = this;
                 let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
+                        debugger;
                         let body = json.body;
-                        cleanMarks();
+                        me.showMark(body,type);
+//                        cleanMarks();
+//                        body.forEach(item=>{
+//                            let cfgs = item.style;
+//                            if(typeof(cfgs)=='string'){
+//                                cfgs = JSON.parse(item.style);
+//                            }
+//                            let datas = item.data;
+//                            datas.forEach(data=>{
+//                                let coords = eval(data.COORDS);
+//                                cfgs['lng']=coords[0];
+//                                cfgs['lat']=coords[1];
+//                                addMarksV2(cfgs);
+//                            });
+//                        });
+                        me.drawer =false;
+                    }
+                });
+            },
+            showMark:function(body,type){
+                cleanMarks();
+                switch(type){
+                    case '1':
                         body.forEach(item=>{
                             let cfgs = item.style;
                             if(typeof(cfgs)=='string'){
@@ -187,9 +231,132 @@
                                 addMarksV2(cfgs);
                             });
                         });
-                        me.drawer =false;
+                        break;
+                    case '2':break;
+                    case '3':break;
+                    case '4':
+                        this.carourselData(body);
+                    default:break;
+                }
+                this.drawer =false;
+            },
+            carourselData:function(body){
+                let group=[];
+                for(let p in body){
+                    group.push(p);
+                }
+                let i=0;
+                this.timer = setInterval(carourselFn,2000);
+                function carourselFn(){
+                    cleanMarks(true);
+                    let el = group[i];
+                    let data = body[el]||[];
+                    data.forEach(item=>{
+                        let itemData = item.data;
+                        let cfgs = JSON.parse(item.style);
+                        itemData.forEach(sItem=>{
+                            let coords = eval(sItem.COORDS);
+                            cfgs['lng']=coords[0];
+                            cfgs['lat']=coords[1];
+                            cfgs['text']=''+sItem.VAL;
+                            cfgs.radius=sItem.VAL;
+                            addCarouselMarks(cfgs);
+                        });
+                    });
+                    console.info(i);
+                    if(i==group.length-1){
+                        i=0;
+                    }else{
+                        i++
                     }
-                });
+                }
+            },
+            carourselTest:function(){
+                let styleJSON='{"displayNameStatus":true,"font":"normal 14px 微软雅黑","iconName":"disease","iconStatus":0,"iconType":"jpg","imageColor":"#3392F4","opacity":0.7,"radius":34,"styleType":1,"text":"asdfasdf","textAlign":"center","textBaseline":"middle","textFillColor":"#FDF9FE","textStrokeColor":"#ffcc33","textStrokeWidth":2}';
+                let cfgs = JSON.parse(styleJSON);
+                let body = {
+                    '2019-01':[
+                        {ZXZ: 11, COORDS: "[113.37650606337256,23.125024945025157]", ADDRESS: "天河1",time:"2019-01"},
+                        {ZXZ: 15, COORDS: "[113.36776649286534,23.124053881635465]", ADDRESS: "天河2",time:"2019-01"},
+                        {ZXZ: 18, COORDS: "[113.35587096634163,23.12284005239835]", ADDRESS: "天河3",time:"2019-01"},
+                        {ZXZ: 19, COORDS: "[113.35805585896843,23.11337218434886]", ADDRESS: "天河4",time:"2019-01"},
+                        {ZXZ: 23, COORDS: "[113.38160414616843,23.114586013585978]", ADDRESS: "天河5",time:"2019-01"},
+                        {ZXZ: 13, COORDS: "[113.34300437642821,23.116528140365357]", ADDRESS: "天河6",time:"2019-01"},
+                        {ZXZ: 14, COORDS: "[113.34373267397048,23.12381111578804]", ADDRESS: "天河7",time:"2019-01"},
+                        {ZXZ: 22, COORDS: "[113.3204271526179,23.123325584093195]", ADDRESS: "天河8",time:"2019-01"},
+                        {ZXZ: 23, COORDS: "[113.3396056545643,23.141533022649902]", ADDRESS: "天河9",time:"2019-01"},
+                        {ZXZ: 34, COORDS: "[113.31897055753336,23.13497834476949]", ADDRESS: "天河10",time:"2019-01"}
+                    ],
+                    '2019-02':[
+                        {ZXZ: 12, COORDS: "[113.37650606337256,23.125024945025157]", ADDRESS: "天河1",time:"2019-02"},
+                        {ZXZ: 20, COORDS: "[113.36776649286534,23.124053881635465]", ADDRESS: "天河2",time:"2019-02"},
+                        {ZXZ: 23, COORDS: "[113.35587096634163,23.12284005239835]", ADDRESS: "天河3",time:"2019-02"},
+                        {ZXZ: 24, COORDS: "[113.35805585896843,23.11337218434886]", ADDRESS: "天河4",time:"2019-02"},
+                        {ZXZ: 28, COORDS: "[113.38160414616843,23.114586013585978]", ADDRESS: "天河5",time:"2019-02"},
+                        {ZXZ: 20, COORDS: "[113.34300437642821,23.116528140365357]", ADDRESS: "天河6",time:"2019-02"},
+                        {ZXZ: 23, COORDS: "[113.34373267397048,23.12381111578804]", ADDRESS: "天河7",time:"2019-02"},
+                        {ZXZ: 26, COORDS: "[113.3204271526179,23.123325584093195]", ADDRESS: "天河8",time:"2019-02"},
+                        {ZXZ: 26, COORDS: "[113.3396056545643,23.141533022649902]", ADDRESS: "天河9",time:"2019-02"},
+                        {ZXZ: 36, COORDS: "[113.31897055753336,23.13497834476949]", ADDRESS: "天河10",time:"2019-02"}
+
+                    ],
+                    '2019-03':[
+                        {ZXZ: 20, COORDS: "[113.37650606337256,23.125024945025157]", ADDRESS: "天河1",time:"2019-03"},
+                        {ZXZ: 25, COORDS: "[113.36776649286534,23.124053881635465]", ADDRESS: "天河2",time:"2019-03"},
+                        {ZXZ: 28, COORDS: "[113.35587096634163,23.12284005239835]", ADDRESS: "天河3",time:"2019-03"},
+                        {ZXZ: 29, COORDS: "[113.35805585896843,23.11337218434886]", ADDRESS: "天河4",time:"2019-03"},
+                        {ZXZ: 33, COORDS: "[113.38160414616843,23.114586013585978]", ADDRESS: "天河5",time:"2019-03"},
+                        {ZXZ: 27, COORDS: "[113.34300437642821,23.116528140365357]", ADDRESS: "天河6",time:"2019-03"},
+                        {ZXZ: 30, COORDS: "[113.34373267397048,23.12381111578804]", ADDRESS: "天河7",time:"2019-03"},
+                        {ZXZ: 29, COORDS: "[113.3204271526179,23.123325584093195]", ADDRESS: "天河8",time:"2019-03"},
+                        {ZXZ: 30, COORDS: "[113.3396056545643,23.141533022649902]", ADDRESS: "天河9",time:"2019-03"},
+                        {ZXZ: 38, COORDS: "[113.31897055753336,23.13497834476949]", ADDRESS: "天河10",time:"2019-03"}
+                    ],
+                    '2019-04':[
+                        {ZXZ: 25, COORDS: "[113.37650606337256,23.125024945025157]", ADDRESS: "天河1",time:"2019-04"},
+                        {ZXZ: 30, COORDS: "[113.36776649286534,23.124053881635465]", ADDRESS: "天河2",time:"2019-04"},
+                        {ZXZ: 33, COORDS: "[113.35587096634163,23.12284005239835]", ADDRESS: "天河3",time:"2019-04"},
+                        {ZXZ: 34, COORDS: "[113.35805585896843,23.11337218434886]", ADDRESS: "天河4",time:"2019-04"},
+                        {ZXZ: 38, COORDS: "[113.38160414616843,23.114586013585978]", ADDRESS: "天河5",time:"2019-04"},
+                        {ZXZ: 30, COORDS: "[113.34300437642821,23.116528140365357]", ADDRESS: "天河6",time:"2019-04"},
+                        {ZXZ: 36, COORDS: "[113.34373267397048,23.12381111578804]", ADDRESS: "天河7",time:"2019-04"},
+                        {ZXZ: 37, COORDS: "[113.3204271526179,23.123325584093195]", ADDRESS: "天河8",time:"2019-04"},
+                        {ZXZ: 35, COORDS: "[113.3396056545643,23.141533022649902]", ADDRESS: "天河9",time:"2019-04"},
+                        {ZXZ: 40, COORDS: "[113.31897055753336,23.13497834476949]", ADDRESS: "天河10",time:"2019-04"}
+                    ]
+                }
+                let group=[];
+                for(let p in body){
+                    group.push(p);
+                }
+                var i=0;
+                this.timer = setInterval(testFun,2000);
+                function testFun(){
+                    cleanMarks(true);
+                    let el = group[i];
+                    let data = body[el]||[];
+                    data.forEach(item=>{
+                        let coords = eval(item.COORDS);
+                        cfgs['lng']=coords[0];
+                        cfgs['lat']=coords[1];
+                        cfgs['text']=''+item.ZXZ;
+                        cfgs.radius=item.ZXZ;
+                        addCarouselMarks(cfgs);
+                    });
+                    console.info(i);
+                    if(i==group.length-1){
+                        i=0;
+                    }else{
+                        i++
+                    }
+                }
+            },
+            closeCarourse:function(){
+                clearInterval(this.timer);
+                this.timer = undefined;
+            },
+            setRaduisByVal:function(maxVal,val){
+
             }
 
         }

@@ -43,13 +43,16 @@ function setStroke(cfg){
 function addTextStyle(cfg){
     var text = new ol.style.Text({
         //对齐方式
-        textAlign: cfg.textAlign||'center',
+        textAlign: cfg.textAlign||'center',//center
         //文本基线
-        textBaseline: cfg.textBaseline||'middle',
+        textBaseline: cfg.textBaseline||'middle',//bottom middle
         //字体样式
-        font: cfg.font||'bold 18px 微软雅黑',
+        font: cfg.font||'normal 14px 微软雅黑',
         //文本内容
         text: cfg.name||'',
+        // text:'test',
+        // rotateWithView:true,
+        // rotation:1,
         //填充样式
         fill: new ol.style.Fill({
             color: cfg.fillColor||'#409EFF'
@@ -102,6 +105,15 @@ function addMapArea(jsonAreaCode){
     this.layer = layer;
     return layer;
 }
+function marksLayer(jsonAreaCode){
+    var marksLayer = new ol.layer.Vector({
+        title: 'add Layer1',
+        source: new ol.source.Vector({
+            projection: 'EPSG:4326'
+        })
+    });
+    this.marksLayer = marksLayer;
+}
 //初始化地图
 function initMap(cfgs){
     var layers = [];
@@ -122,6 +134,8 @@ function initMap(cfgs){
         }
     }
     layers.push(this.layer);
+    this.marksLayer();
+    layers.push(this.marksLayer);
     var center = [parseFloat(jsonAreaCode.center[0]),parseFloat(jsonAreaCode.center[1])];
     var map = new ol.Map({
         target: jsonAreaCode.target,
@@ -399,16 +413,7 @@ function addPoint(lng,lat,lableName){
     this.layer.getSource().addFeature(anchor);
     return anchor;
 }
-function addMarksV2(cfgs){
-    debugger;
-    if(!this.layer){
-        return;
-    }
-    // 创建一个Feature，并设置好在地图上的位置
-    var anchor = new ol.Feature({
-        geometry: new ol.geom.Point([cfgs.lng,cfgs.lat])
-    });
-    // 设置样式，在样式中就可以设置图标
+function initImage(cfgs){
     var image;
     if(cfgs.iconStatus){
         image = new ol.style.Icon({
@@ -423,29 +428,66 @@ function addMarksV2(cfgs){
             })
         });
     }
-    anchor.setStyle(new ol.style.Style({
-        image:image,
-        text: new ol.style.Text({
-            //对齐方式
-            textAlign: cfgs.textAlign||'center',
-            //文本基线
-            textBaseline: cfgs.textBaseline||'middle',
-            //字体样式
-            font: cfgs.font||'normal 14px 微软雅黑',
-            //文本内容
-            text: cfgs.displayNameStatus?cfgs.text||'':'',
-            //填充样式
-            fill: new ol.style.Fill({
-                color: cfgs.textFillColor||'#FDF9FE'
-            }),
-            //笔触
-            // stroke: new ol.style.Stroke({
-            //     color: cfgs.textStrokeColor||'#ffcc33',
-            //     width: cfgs.textStrokeWidth||2
-            // })
-        })
-    }));
+    return image;
+}
+function initFill(cfgs){
+    return new ol.style.Fill({ color: cfgs.textFillColor||'#FDF9FE'});
+}
+function initStroke(cfgs){
+    return new ol.style.Stroke({
+        color: cfgs.textStrokeColor||'#ffcc33',
+        width: cfgs.textStrokeWidth||2
+    });
+}
+function initText(cfgs){
+    var textStyle = new ol.style.Text({
+        //对齐方式
+        textAlign: cfgs.textAlign||'center',
+        //文本基线
+        textBaseline: cfgs.textBaseline||'middle',
+        //字体样式
+        font: cfgs.font||'normal 14px 微软雅黑',
+        //文本内容
+        text: cfgs.displayNameStatus?cfgs.text||'':'',
+        //填充样式
+        fill: initFill(cfgs),
+    });
+    if(cfgs.strokeStatus){
+        //笔触
+        textStyle['stroke'] = initStroke(cfgs);
+    }
+    return textStyle;
+}
+function pointStyle(cfgs){
+    return new ol.style.Style({
+        image:initImage(cfgs),
+        text:initText(cfgs)
+    });
+}
+function addMarksV2(cfgs){
+    if(!this.layer){
+        return;
+    }
+    // 创建一个Feature，并设置好在地图上的位置
+    var anchor = new ol.Feature({
+        geometry: new ol.geom.Point([cfgs.lng,cfgs.lat])
+    });
+    anchor.setStyle(pointStyle(cfgs));
     this.layer.getSource().addFeature(anchor);
+}
+/**
+ * 添加轮播marks
+ * */
+function addCarouselMarks(cfgs){
+    if(!this.marksLayer){
+        return;
+    }
+    // 创建一个Feature，并设置好在地图上的位置
+    var anchor = new ol.Feature({
+        geometry: new ol.geom.Point([cfgs.lng,cfgs.lat])
+    });
+    anchor.setStyle(pointStyle(cfgs));
+    this.marksLayer.getSource().addFeature(anchor);
 }
 function addMarks(lableName,coord,iconName){
     if(!this.layer){
@@ -487,9 +529,12 @@ function addMarks(lableName,coord,iconName){
     // layers.array_[1].getSource().addFeature(anchor);
     this.layer.getSource().addFeature(anchor);
 }
-function cleanMarks(){
-    if(this.layer){
+function cleanMarks(type){
+    if(!type && this.layer){
         this.layer.getSource().clear();
+    }
+    if(type && this.marksLayer){
+        this.marksLayer.getSource().clear();
     }
     // var layers = this.map.getLayers();
     // layers.array_[1].getSource().clear();
@@ -693,7 +738,7 @@ function setPointStyle(feature,style){
         }),
         text: new ol.style.Text({
             text: name,
-            font:"bold 15px 微软雅黑",
+            font:"normal 14px 微软雅黑",
             fill: new ol.style.Fill({
                 color: style.textFillColor||'white'
             }),

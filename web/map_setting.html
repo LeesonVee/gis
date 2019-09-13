@@ -189,40 +189,88 @@
                             </el-tab-pane>
                             <el-tab-pane label="数据绑定" name="bindData">
                                 <el-collapse v-model="activeDatas">
-                                    <el-collapse-item title="标注" name="1">
+                                    <el-collapse-item title="散点图" name="1">
                                         <el-row>
                                             <el-col :span="24">
                                                 <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('标注','新增')"></i>
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('1','add')"></i>
                                                 </div>
                                             </el-col>
                                         </el-row>
                                         <el-row>
                                             <el-table :data="marksHeadData" border style="width: 100%" size="mini" max-height="350">
                                                 <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                <!--<el-table-column prop="MODEL_RELATION_TYPE" label="类别" width="80">-->
-                                                    <!--<template slot-scope="scope">-->
-                                                        <!--<el-tag :type="scope.row.MARKS_STYLE_TYPE === '0' ? 'primary' : 'success'" disable-transitions>{{scope.row.MARKS_STYLE_TYPE === '0'?'默认':'自定义'}}</el-tag>-->
-                                                    <!--</template>-->
-                                                <!--</el-table-column>-->
                                                 <el-table-column label="样式设置">
                                                     <template slot-scope="scope">
-                                                        <el-button @click="showMarks(scope.$index,scope.row)" type="text" size="small">显示</el-button>
-                                                        <el-button @click="modifyClick(scope.$index,scope.row)" type="text" size="small">修改</el-button>
-                                                        <el-button @click="delModelRelation(scope.$index,scope.row)" type="text" size="small">删除</el-button>
+                                                        <el-button @click="showMarks(scope.$index,scope.row,'1')" type="text" size="small">显示</el-button>
+                                                        <el-button @click="modifyClick(scope.$index,scope.row,'1')" type="text" size="small">修改</el-button>
+                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'1')" type="text" size="small">删除</el-button>
                                                     </template>
                                                 </el-table-column>
                                             </el-table>
-
                                         </el-row>
                                     </el-collapse-item>
                                     <el-collapse-item title="热力图" name="2">
                                         <el-row>
                                             <el-col :span="24">
                                                 <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('热地图','新增')"></i>
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('2','add')"></i>
                                                 </div>
                                             </el-col>
+                                        </el-row>
+                                        <el-row>
+                                            <el-table :data="hotMapData" border style="width: 100%" size="mini" max-height="350">
+                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                <el-table-column label="样式设置">
+                                                    <template slot-scope="scope">
+                                                        <el-button @click="showMarks(scope.$index,scope.row,'2')" type="text" size="small">显示</el-button>
+                                                        <el-button @click="modifyClick(scope.$index,scope.row,'2')" type="text" size="small">修改</el-button>
+                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'2')" type="text" size="small">删除</el-button>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-row>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="标注" name="3">
+                                        <el-row>
+                                            <el-col :span="24">
+                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('3','add')"></i>
+                                                </div>
+                                            </el-col>
+                                        </el-row>
+                                        <el-row>
+                                            <el-table :data="lableMapData" border style="width: 100%" size="mini" max-height="350">
+                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                <el-table-column label="样式设置">
+                                                    <template slot-scope="scope">
+                                                        <el-button @click="showMarks(scope.$index,scope.row,'3')" type="text" size="small">显示</el-button>
+                                                        <el-button @click="modifyClick(scope.$index,scope.row,'3')" type="text" size="small">修改</el-button>
+                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'3')" type="text" size="small">删除</el-button>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-row>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="轮播图" name="4">
+                                        <el-row>
+                                            <el-col :span="24">
+                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('4','add')"></i>
+                                                </div>
+                                            </el-col>
+                                        </el-row>
+                                        <el-row>
+                                            <el-table :data="carouselMapData" border style="width: 100%" size="mini" max-height="350">
+                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                <el-table-column label="样式设置">
+                                                    <template slot-scope="scope">
+                                                        <el-button @click="showMarks(scope.$index,scope.row,'4')" type="text" size="small">显示</el-button>
+                                                        <el-button @click="modifyClick(scope.$index,scope.row,'4')" type="text" size="small">修改</el-button>
+                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'4')" type="text" size="small">删除</el-button>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
                                         </el-row>
                                     </el-collapse-item>
                                 </el-collapse>
@@ -241,7 +289,7 @@
         </el-aside>
     </el-container>
 
-    <el-dialog :title="dialogDataOperate+title" :visible.sync="dialogDatabing" width="50%">
+    <el-dialog :title="dialogDataOperate+title" :visible.sync="dialogDatabing" width="55%">
         <el-container style="height: 500px; border: 1px solid #eee;">
             <el-aside width="300px" style="background-color: rgb(238, 241, 246)">
                 <el-collapse v-model="activeDataModel">
@@ -265,7 +313,7 @@
                 </el-header>
 
                 <el-main>
-                    <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="90px" v-if="modelRadio!=''">
+                    <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="95px" v-if="modelRadio!=''">
                         <el-form-item :label="title+'名称'" prop="name">
                             <el-col :span="12"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
                             <el-col :span="2">&nbsp;</el-col>
@@ -278,6 +326,11 @@
                         </el-form-item>
                         <el-form-item label="地理位置" prop="coordCol">
                             <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='4'">
+                            <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
@@ -337,11 +390,6 @@
     </el-dialog>
 </div>
 <script type="text/javascript">
-    //天河
-//    var apiRootPath='http://10.195.237.115:8120/hub/';
-//    var path = 'http://10.195.237.116:8140/gis/';
-//    var apiRootPath='http://10.32.0.169:8120/hub/';
-//    var path = 'http://10.32.0.169:8140/gis/';
     new Vue({
         el: '#app',
         data:{
@@ -350,28 +398,7 @@
             activeDataModel:[],
             modelRadio:'',
             modelRadioEnName:'',
-            modelData:[
-//                {
-//                    DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
-//                    DNAME: "HCMS_HUB",
-//                    CHILD:[{
-//                        COMMENTS: "ZSRK_LRCSPM",
-//                        DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
-//                        DNAME: "HCMS_HUB",
-//                        EN_NAME: "ZSRK_LRCSPM",
-//                        MID: "7ac1dcba0b2e4824b3d1",
-//                        MNAME: "ZSRK_LRCSPM（中山人口_流入城市排名）"
-//                    },{
-//                        COMMENTS: "ZSRK_LRCSPM1",
-//                        DID: "E30CF47A9B1F49EE8AA4CFD403A452C6",
-//                        DNAME: "HCMS_HUB",
-//                        EN_NAME: "ZSRK_LRCSPM",
-//                        MID: "7ac1dcba0b2e4824b3d123",
-//                        MNAME: "ZSRK_LRCSPM（中山人口）"
-//                    }
-//                    ]
-//                }
-            ],
+            modelData:[],
             dimensionColList:[],
             metricColList:[],
             iconList:[],
@@ -381,6 +408,8 @@
             activeDatas:['1'],
             marksHeadData:[],
             hotMapData:[],
+            lableMapData:[],
+            carouselMapData:[],
             title:'标注',
             dialogFormVisible:false,
             formMarks:{
@@ -388,6 +417,7 @@
                 displayNameStatus:true,
                 addressCol:'',
                 coordCol:'',
+                carouselCol:'',
                 valCol:'',
                 styleType:0,
                 status:'1',
@@ -405,9 +435,9 @@
                 textFillColor:'#FDF9FE',
                 textStrokeColor:'#ffcc33',
                 textStrokeWidth:2,
-                status:'1',
                 opt:'add',
-                MODEL_RELATION_ID:''
+                MODEL_RELATION_ID:'',
+                dataType:'1'
             },
             dialogRules:{
                 name: [
@@ -419,6 +449,9 @@
                 ],
                 coordCol:[
                     { required: true, message: '请选择地理位置', trigger: 'change' }
+                ],
+                carouselCol:[
+                    { required: true, message: '请绑定轮播字段', trigger: 'change' }
                 ],
                 valCol:[
                     { required: true, message: '请选择值', trigger: 'change' }
@@ -436,8 +469,6 @@
                 city:'',
                 district:'',
                 lng:'',
-//                lng:'113.335367',
-//                lat:'23.13559',
                 lat:'',
                 zoom:'',
                 projection:'EPSG:4326',
@@ -445,8 +476,8 @@
                 mapType:'amap',
                 fillColor:'rgba(0, 0, 0, 0)',
                 strokeColor:'#080107',
-                areaColor:'rgba(17, 30, 88, 0)',
-                areaStrokeColor:'rgba(67, 231, 249, 1)',
+                areaColor:'rgba(88, 131, 226, 0.2)',
+                areaStrokeColor:'rgba(88, 131, 226, 1)',
                 areaStrokeWidth:2,
                 events:[]
             },
@@ -514,7 +545,8 @@
             citys:[],
             cityOption:[],
             districts:[],
-            districtOption:[]
+            districtOption:[],
+            timer:''
         },
         created(){
             this.loadParam();
@@ -527,8 +559,8 @@
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
                         this.getMapCfgs();
-                        var cfgs = this.mapCfgs.baseInfo;
-                        for(var p in this.mapCfgs.styleInfo){
+                        let cfgs = this.mapCfgs.baseInfo;
+                        for(let p in this.mapCfgs.styleInfo){
                             cfgs[p] = this.mapCfgs.styleInfo[p];
                         }
                         if(type=='create'){
@@ -538,12 +570,12 @@
                             if(!this.showMap){
                                 initMap(cfgs);
                             }
-                            var params = this.mapCfgs;
+                            let params = this.mapCfgs;
                             params['name'] = this.form.name;
                             if(this.pkey!=''){
                                 params['id'] = this.pkey;
                             }
-                            this.saveGisData('POST',apiRootPath+'map/saveMapData.html',params);
+                            this.saveGisData('POST',configpre.map_saveMapData,params);
                         }
                     } else {
                         if(this.activeName=='systemStyle' || this.activeName=='bindData'){
@@ -561,7 +593,7 @@
             },
             getMapCfgs:function(){
                 this.resetMapCfgs();
-                var form = this.form;
+                let form = this.form;
                 this.mapCfgs.baseInfo['name']=form.name;
                 this.mapCfgs.baseInfo['target']=form.target;
                 this.mapCfgs.baseInfo['center']=[form.lng,form.lat];
@@ -597,7 +629,7 @@
                 this.mapCfgs.styleInfo={};
             },
             rquestParams:function(method,api,data){
-                var jsonDataList={
+                let jsonDataList={
                     httpMethod:method,
                     url:api,
                     data:data?JSON.stringify(data):''
@@ -605,8 +637,8 @@
                 return jsonDataList;
             },
             saveGisData:function(method,api,data){
-                var me = this;
-                var jsonDataList = this.rquestParams(method,api,data);
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200'){
                         me.pkey = json.body;
@@ -628,44 +660,97 @@
                 });
             },
             createHtmlTemplet:function(){
-                var html='<!DOCTYPE html>'
-                              +'<html lang="en">'
-                              +'<head>'
-                              +'    <meta charset="UTF-8">'
-                              +'    <title>GIS</title>'
-                              +'    <link rel="stylesheet" href="../css/bootstrap.css" type="text/css">'
-                              +'    <link rel="stylesheet" href="../css/ol.css" type="text/css">'
-                              +'    <script type="text/javascript" src="../js/ajaxrequestasync.js"></s'+ 'cript>'
-                              +'    <script type="text/javascript" src="../js/ajaxrequestsync.js"></s'+ 'cript>'
-                              +'    <script src="../js/jquery-2.2.3.min.js"></s'+ 'cript>'
-                              +'    <script src="../js/bootstrap.js"></s'+ 'cript>'
-                              +'    <script src="../js/ol.js"></s'+ 'cript>'
-                              +'    <script src="../js/map.js"></s'+ 'cript>'
-                              +'    <style type="text/css">head,html,body{width: 100%;height: 100%;}</style>'
-                              +'</head>'
-                              +'<body>'
-                              +'    <div id="map" style="width: 100%;height: 100%;"></div>'
-                              +'<script type="text/javascript">'
-                              +'    var apiRootPath="'+apiRootPath+'";'
-                              +'    var path = "'+path+'";'
-                              +'    var jsonDataList ={httpMethod:"POST",url:"'+apiRootPath+'map/getMapByPkey.html",data:JSON.stringify({ID:"2805a1559c8c42caaa7f"})};'
-                              +'    ajaxrequestasync(jsonDataList,function(code,msg,json){if(code=="200"){var body = json.body;var baseInfo = JSON.parse(body.BASE_INFO);var styleInfo = JSON.parse(body.STYLE_INFO);var cfgs = baseInfo;for(var p in styleInfo){cfgs[p] = styleInfo[p];}initMap(cfgs);}});'
-                              +'</s'+'cript>'
-                              +'</body>'
-                              +'</html>';
+                let html='<!DOCTYPE html>'
+                            +'<html lang="en">'
+                            +'<head>'
+                            +'    <meta charset="UTF-8">'
+                            +'    <title>Title</title>'
+                            +'    <link rel="stylesheet" href="../css/ol.css" type="text/css">'
+                            +'    <script type="text/javascript" src="../js/ajaxrequestasync.js"></s'+ 'cript>'
+                            +'    <script type="text/javascript" src="../js/ajaxrequestsync.js"></s'+ 'cript>'
+                            +'    <script type="text/javascript" src="../js/config.js"></s'+ 'cript>'
+                            +'    <script src="../js/jquery-2.2.3.min.js"></s'+ 'cript>'
+                            +'    <script src="../js/bootstrap.js"></s'+ 'cript>'
+                            +'    <script src="../js/ol.js"></s'+ 'cript>'
+                            +'    <script src="../js/map.js"></s'+ 'cript>'
+                            +'    <link rel="stylesheet" href="../css/element.css">'
+                            +'    <script type="text/javascript" src="../js/vue.min.js"></s'+ 'cript>'
+                            +'    <script src="../js/element.js"></s'+ 'cript>'
+                            +'    <link rel="stylesheet" href="../css/showMap.css">'
+                            +'</head>'
+                            +'<body>'
+                            +'<div id="app" class="fullScreen">'
+                            +'    <div id="title" class="title_center">{{title}}</div>'
+                            +'    <div id="map" class="fullScreen" ref="mymap"></div>'
+                            +'    <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>'
+                            +'    <el-drawer title="显示设置明细" :visible.sync="drawer" :before-close="handleClose" :size="size">'
+                            +'        <el-table ref="multipleTable" :data="tableData" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="350">'
+                            +'            <el-table-column type="selection" width="55"></el-table-column>'
+                            +'            <el-table-column label="名称" width="220">'
+                            +'                <template slot-scope="scope">{{ scope.row.MODEL_RELATION_NAME }}</template>'
+                            +'            </el-table-column>'
+                            +'            <el-table-column prop="MODEL_RELATION_TYPE" label="类别">'
+                            +'                <template slot-scope="scope">'
+                            +'                    <el-tag :type="scope.row.MODEL_RELATION_TYPE === \'1\' ? \'primary\' : \'success\'" disable-transitions>{{scope.row.MODEL_RELATION_TYPE === \'1\'?\'标注\':\'热力图\'}}</el-tag>'
+                            +'                </template>'
+                            +'            </el-table-column>'
+                            +'        </el-table>'
+                            +'        <div style="margin: 20px 0px 0px 20px;">'
+                            +'            <el-button type="primary" @click="showMap()">确定</el-button>'
+                            +'            <el-button type="success" @click="toggleSelection()">重置</el-button>'
+                            +'        </div>'
+                            +'    </el-drawer>'
+                            +'    <div class="bottom_right">'
+                            +'        <div v-for="item in showBottomRight">'
+                            +'            <el-row v-if="item.isImg" style="margin-top: 5px;">'
+                            +'                <el-col :span="1">&nbsp;</el-col>'
+                            +'                <el-col :span="3" style="min-width: 40px;"><img :src="item.imgUrl"/></el-col>'
+                            +'                <el-col :span="18"><div class="div_middle">{{item.showName}}</div></el-col>'
+                            +'            </el-row>'
+                            +'            <el-row v-else style="margin-top: 5px;">'
+                            +'                <el-col :span="1">&nbsp;</el-col>'
+                            +'                <el-col :span="3" style="min-width: 40px;"><div class="div_circle" :style="{backgroundColor:item.imageColor}"></div></el-col>'
+                            +'                <el-col :span="18"><div class="div_middle">{{item.showName}}</div></el-col>'
+                            +'            </el-row>'
+                            +'         </div>'
+                            +'        <div v-else></div>'
+                            +'    </div>'
+                            +'</div>'
+                            +'<script type="text/javascript">'
+                            +'    new Vue({el: \'#app\','
+                            +'        data:{ size:\'20%\',drawer: false,tableData:[],marks:[],styleInfo:\'\',multipleSelection:[],title:\'\', showBottomRight:[]},'
+                            +'        mounted(){this.loadGisData(\'POST\',configpre.map_getMapByPkey,{ID:"'+this.pkey+'"});this.loadModelRelationData(\'POST\',configpre.map_loadModelRelation); this.getHeight();},'
+                            +'        methods:{'
+                            +'            getHeight:function(){let width = this.$refs.mymap.offsetWidth;let percent = 384/width;if(percent>0.2){this.size=parseInt(percent*100)+\'%\';}},'
+                            +'            handleClose:function(done) {done();},'
+                            +'            rquestParams:function(method,api,data){var jsonDataList={httpMethod:method,url:api,data:data?JSON.stringify(data):\'\'};return jsonDataList;},'
+                            +'            loadGisData:function(method,api,data){var me = this;var jsonDataList = this.rquestParams(method,api,data);ajaxrequestasync(jsonDataList,function(code,msg,json){if(code==\'200\'){var body = json.body;var baseInfo = JSON.parse(body.BASE_INFO);var styleInfo = JSON.parse(body.STYLE_INFO);me.styleInfo = styleInfo;me.title = body.MAP_NAME;var cfgs = baseInfo;for(var p in styleInfo){cfgs[p] = styleInfo[p];}initMap(cfgs);}});},'
+                            +'            loadModelRelationData:function(method,api,data){var me = this;var jsonDataList = this.rquestParams(method,api,data);ajaxrequestasync(jsonDataList,function(code,msg,json){if(code==\'200\' && json.body){me.tableData = [];let marksHeadData = json.body.markList||[];let hotMapData = json.body.hotMapList||[];me.tableData = me.tableData.concat(marksHeadData).concat(hotMapData);}});},'
+                            +'            toggleSelection:function(){cleanMarks();this.$refs.multipleTable.clearSelection();},'
+                            +'            handleSelectionChange:function(val){this.multipleSelection = val;},'
+                            +'            showMap:function(){if(this.multipleSelection.length==0){this.myMessage(\'请选择数据\',\'warning\');return;}this.showBottomRight = [];this.multipleSelection.forEach(item=>{let cfgs = {};cfgs[\'showName\'] = item.MODEL_RELATION_NAME;let style = JSON.parse(item.MODEL_STYLE_DATA);let iconStatus = style.iconStatus==\'1\'?true:false;cfgs[\'isImg\'] = iconStatus;if(iconStatus){cfgs[\'imgUrl\'] = configpre.webGisPath+\'static/icon/\'+style.iconName+\'.\'+style.iconType;}else{cfgs[\'imageColor\'] = style.imageColor;}this.showBottomRight.push(cfgs);});let params = {modelRelation:this.multipleSelection};this.loadTableData(\'POST\',configpre.map_queryTableDataByGisModelRelation,params);},'
+                            +'            myMessage:function(msg,type) {this.$message({message: msg,type: type});},'
+                            +'            loadTableData:function(method,api,data){let me = this;let jsonDataList = this.rquestParams(method,api,data);ajaxrequestasync(jsonDataList,function(code,msg,json){if(code==\'200\' && json.body){let body = json.body;cleanMarks();body.forEach(item=>{let cfgs = item.style;if(typeof(cfgs)==\'string\'){cfgs = JSON.parse(item.style);}let datas = item.data;datas.forEach(data=>{let coords = eval(data.COORDS);cfgs[\'lng\']=coords[0]; cfgs[\'lat\']=coords[1];addMarksV2(cfgs);});});me.drawer =false;} });}'
+                            +'		}'
+                            +'    });'
+                            +'</s'+ 'cript>'
+                            +'</body>'
+                            +'</html>';
                 html=html.replace(/%/g,'%25');//将百分号转义
-                var fileName='GIS_'+this.pkey;
-                var fileType="html";
-                var fileInfor={
+                html=html.replace(/\+/g,'%2b');//将百分号转义
+                debugger;
+                let fileName='GIS_'+this.pkey;
+                let fileType="html";
+                let fileInfor={
                     fileName:fileName,
                     fileType:fileType,
                     data:html,
                 }
-                var fileJsonData=this.rquestParams('POST',configpre.map_createFile,fileInfor);
-                var me = this;
+                let fileJsonData=this.rquestParams('POST',configpre.map_createFile,fileInfor);
+                let me = this;
                 ajaxrequestasync(fileJsonData,function(code,msg,json){
                     if(code=='200'){
-                        var templateUrl=json.body;
+                        let templateUrl=json.body;
                         me.$alert('保存成功，模板路径：'+templateUrl, '提示', {
                             confirmButtonText: '确定',
                         });
@@ -699,6 +784,7 @@
                 this.formMarks.displayNameStatus=true;
                 this.formMarks.addressCol='';
                 this.formMarks.coordCol='';
+                this.formMarks.carouselCol='';
                 this.formMarks.valCol='';
                 this.formMarks.styleType=0;
                 this.formMarks.status='1';
@@ -716,10 +802,11 @@
                 this.formMarks.textFillColor='#FDF9FE';
                 this.formMarks.textStrokeColor='#ffcc33';
                 this.formMarks.textStrokeWidth=2;
+                this.formMarks.opt='add';
             },
             loadAreaCode:function(method,api,data){
-                var me = this;
-                var jsonDataList = this.rquestParams(method,api,data);
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                         me.provinces = json.body.provinces;
@@ -730,18 +817,20 @@
                 });
             },
             loadModelRelationData:function(method,api,data){
-                var me = this;
-                var jsonDataList = this.rquestParams(method,api,data);
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                        me.marksHeadData = json.body.markList||[];
                        me.hotMapData = json.body.hotMapList||[];
+                       me.lableMapData=json.body.lableList||[];
+                       me.carouselMapData = json.body.carouselList||[];
                     }
                 });
             },
             loadModelData:function(method,api,data){
-                var me = this;
-                var jsonDataList = this.rquestParams(method,api,data);
+                let me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                         me.modelData = json.body;
@@ -752,6 +841,7 @@
                 });
             },
             saveMarksData:function(data,index){
+                debugger
                 let me = this;
                 let type = this.formMarks.opt;
                 let dataType = data.MODEL_RELATION_TYPE;
@@ -765,6 +855,10 @@
                                 me.marksHeadData.splice(index,1);
                             }else if(dataType=='2'){
                                 me.hotMapData.splice(index,1);
+                            }else if(dataType=='3'){
+                                me.lableMapData.splice(index,1);
+                            }else if(dataType=='4'){
+                                me.carouselMapData.splice(index,1);
                             }
                         }else if(type=='add'){
                             msg="添加成功";
@@ -773,6 +867,10 @@
                                 me.marksHeadData.push(data);
                             }else if(dataType=='2'){
                                 me.hotMapData.push(data);
+                            }else if(dataType=='3'){
+                                me.lableMapData.push(data);
+                            }else if(dataType=='4'){
+                                me.carouselMapData.push(data);
                             }
                         }else if(type=='modify'){
                             msg = '修改成功';
@@ -780,6 +878,10 @@
                                 me.marksHeadData.splice(index,1,data);
                             }else if(dataType=='2'){
                                 me.hotMapData.splice(index,1,data);
+                            }else if(dataType=='3'){
+                                me.lableMapData.splice(index,1,data);
+                            }else if(dataType=='4'){
+                                me.carouselMapData.splice(index,1,data);
                             }
                         }
                         me.myMessage(msg,'success');
@@ -818,8 +920,8 @@
                 this.setMapCenter(val);
             },
             setMapCenter:function(type){
-                var data=[];
-                var areaCode;
+                let data=[];
+                let areaCode;
                 if(type=='province'){
                     data = this.provinceOption;
                     areaCode = this.form.province;
@@ -837,19 +939,59 @@
                     }
                 });
             },
-            openWin:function(dataType,optType,row){
-                if(!this.showMap){
-                    this.myMessage('请先创建地图','warning');
-                    return;
+            /**
+             * 数组转标题名称
+             * @param dataType
+             * @returns 标题名称
+             */
+            numToTitle:function(dataType){
+                let title;
+                switch (dataType){
+                    case '1':title='散点图';break;
+                    case '2':title='热力图';break;
+                    case '3':title='标注';break;
+                    case '4':title='轮播图';break;
+                    default:title='散点图';break;
                 }
+                return title;
+            },
+            /**
+             * 数组转操作类型名称
+             * @param optType
+             * @returns 类型名称
+             */
+            numToTypeName:function(optType){
+                let typeName;
+                switch (optType){
+                    case 'add':typeName='新增';break;
+                    case 'modify':typeName='修改';break;
+                    case 'delete':typeName='删除';break;
+                    case 'view':typeName='查看';break;
+                    default:typeName='新增';break;
+                }
+                return typeName;
+            },
+            /**
+             * 打开弹框页面
+             * @param dataType 类型:1:散点图，2：热力图，3：标注，4：轮播图
+             * @param optType 操作类型：add新增，modify修改，delete 删除，view:查看
+             * @param row
+             */
+            openWin:function(dataType,optType,row){
+                debugger;
+//                if(!this.showMap){
+//                    this.myMessage('请先创建地图','warning');
+//                    return;
+//                }
                 this.dialogDatabing = true;
-                this.dialogDataOperate = optType;
-                this.title = dataType;
+                this.dialogDataOperate = this.numToTypeName(optType);
+                this.title = this.numToTitle(dataType);
+                this.formMarks.dataType=dataType;
                 this.formMarks.status='1';
-                if(optType=='新增'){
+                this.formMarks.opt=optType;
+                if(optType=='add'){
                     this.initDialogParam(true);
-                    this.formMarks.opt='add';
-                }else if(optType=='修改'){
+                }else if(optType=='modify'){
                     let params = {
                         MODEL_ID: row.MODEL_ID,
                         TABLE_NAME: row.TABLE_NAME
@@ -859,21 +1001,17 @@
                     this.formMarks.name=row.MODEL_RELATION_NAME;
                     this.formMarks.addressCol=row.RELATION_DIM_ADDRESS;
                     this.formMarks.coordCol=row.RELATION_DIM_COOR;
+                    this.formMarks.carouselCol=row.RELATION_DIM_CAROUSEL;
                     this.formMarks.valCol=row.RELATION_MEASURE_VAL;
-                    this.formMarks.opt='modify';
                     this.formMarks.MODEL_RELATION_ID=row.MODEL_RELATION_ID;
-                    var styleData = row.MODEL_STYLE_DATA;
+                    let styleData = row.MODEL_STYLE_DATA;
                     if(typeof(row.MODEL_STYLE_DATA) == "string"){
                         styleData = JSON.parse(row.MODEL_STYLE_DATA);
                     }
-                    for(var p in styleData){
+                    for(let p in styleData){
                         this.formMarks[p] = styleData[p];
                     }
                 }
-            },
-            openAddMarksWin:function(){
-//                this.dialogFormVisible = true;
-                this.dialogDatabing = true;
             },
             saveDialogData:function(index){
                 let data ={};
@@ -895,11 +1033,7 @@
                 marksStyleData['styleType'] = formMarks.styleType;
                 marksStyleData['displayNameStatus'] = formMarks.displayNameStatus;
                 data['MODEL_RELATION_NAME']=formMarks.name;
-                if(this.title=='标注'){
-                    data['MODEL_RELATION_TYPE']='1';
-                }else if(this.title=='热力图'){
-                    data['MODEL_RELATION_TYPE']='2';
-                }
+                data['MODEL_RELATION_TYPE']=formMarks.dataType;
                 if(formMarks.opt=='modify'){
                     data['MODEL_RELATION_ID'] = formMarks.MODEL_RELATION_ID;
                 }
@@ -907,23 +1041,28 @@
                 data['MODEL_ID']=this.modelRadio;
                 data['TABLE_NAME']=this.modelRadioEnName;
                 data['RELATION_DIM_COOR']=formMarks.coordCol;
+                data['RELATION_DIM_CAROUSEL']=formMarks.carouselCol;
                 data['RELATION_DIM_ADDRESS']=formMarks.addressCol;
                 data['RELATION_MEASURE_VAL']=formMarks.valCol;
                 data['MODEL_STYLE_DATA']=marksStyleData;
                 this.saveMarksData(data,index);
             },
-            modifyClick:function(index, row){
+            modifyClick:function(index, row,type){
                 this.modifyIndex=index;
                 this.modelRadioEnName = row.TABLE_NAME;
-                this.openWin('标注','修改',row);
+                this.openWin(type,'modify',row);
             },
-            showMarks:function(index,row){
+            showMarks:function(index,row,type){
 //                if(!this.showMap){
 //                    this.myMessage('请先创建地图','warning');
 //                    return;
 //                }
-                var params = {modelRelation:[row]};
-                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params);
+
+                let params = {modelRelation:[row]};
+                if(type=='4'){
+                    params['isCarousel'] = true;
+                }
+                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params,type);
             },
             delModelRelation:function(index,row){
                 row['STATUS'] ='0';
@@ -950,12 +1089,36 @@
                     }
                 });
             },
-            loadTableData:function(method,api,data){
+            loadTableData:function(method,api,data,type){
+                let me = this;
                 let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                         let body = json.body;
-                        cleanMarks();
+                        me.showMark1(body,type);
+//                        cleanMarks();
+//                        body.forEach(item=>{
+//                            let cfgs = item.style;
+//                            if(typeof(cfgs)=='string'){
+//                                cfgs = JSON.parse(item.style);
+//                            }
+//                            let datas = item.data;
+//                            datas.forEach(data=>{
+//                                debugger;
+//                                let coords = eval(data.COORDS);
+//                                cfgs['lng']=coords[0];
+//                                cfgs['lat']=coords[1];
+//                                console.info(cfgs);
+//                                addMarksV2(cfgs);
+//                            });
+//                        });
+                    }
+                });
+            },
+            showMark1:function(body,type){
+                cleanMarks();
+                switch(type){
+                    case '1':
                         body.forEach(item=>{
                             let cfgs = item.style;
                             if(typeof(cfgs)=='string'){
@@ -963,16 +1126,56 @@
                             }
                             let datas = item.data;
                             datas.forEach(data=>{
-                                debugger;
                                 let coords = eval(data.COORDS);
                                 cfgs['lng']=coords[0];
                                 cfgs['lat']=coords[1];
-                                console.info(cfgs);
                                 addMarksV2(cfgs);
                             });
                         });
+                        break;
+                    case '2':break;
+                    case '3':break;
+                    case '4':
+                        this.carourselData(body);
+                    default:break;
+                }
+                this.drawer =false;
+            },
+            carourselData:function(body){
+                this.closeCarourse();
+                let group=[];
+                for(let p in body){
+                    group.push(p);
+                }
+                let i=0;
+                this.timer = setInterval(carourselFn,2000);
+                function carourselFn(){
+                    cleanMarks(true);
+                    let el = group[i];
+                    let data = body[el]||[];
+                    data.forEach(item=>{
+                        let itemData = item.data;
+                        let cfgs = JSON.parse(item.style);
+                        itemData.forEach(sItem=>{
+                            let coords = eval(sItem.COORDS);
+                            cfgs['lng']=coords[0];
+                            cfgs['lat']=coords[1];
+                            cfgs['text']=''+sItem.VAL;
+                            cfgs.radius=sItem.VAL;
+                            addCarouselMarks(cfgs);
+                        });
+                    });
+                    console.info(i);
+                    if(i==group.length-1){
+                        i=0;
+                    }else{
+                        i++
                     }
-                });
+                }
+            },
+            closeCarourse:function(){
+                clearInterval(this.timer);
+                this.timer = undefined;
             },
             submitDialogForm:function(formName) {
                 this.$refs[formName].validate((valid) => {
@@ -986,7 +1189,7 @@
             },
             iconChangeData:function(index){
                 debugger;
-                var item = this.iconList[index];
+                let item = this.iconList[index];
                 this.formMarks.iconName = item.iconName;
                 this.formMarks.iconType = item.iconType;
             },
