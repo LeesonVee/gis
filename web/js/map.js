@@ -105,7 +105,7 @@ function addMapArea(jsonAreaCode){
     this.layer = layer;
     return layer;
 }
-function marksLayer(jsonAreaCode){
+function addMarksLayer(jsonAreaCode){
     var marksLayer = new ol.layer.Vector({
         title: 'add Layer1',
         source: new ol.source.Vector({
@@ -134,7 +134,7 @@ function initMap(cfgs){
         }
     }
     layers.push(this.layer);
-    this.marksLayer();
+    this.addMarksLayer();
     layers.push(this.marksLayer);
     var center = [parseFloat(jsonAreaCode.center[0]),parseFloat(jsonAreaCode.center[1])];
     var map = new ol.Map({
@@ -236,10 +236,24 @@ function addEvent(jsonAreaCode,map){
 }
 function singleClick(evt){
     debugger;
+    var coordinate = evt.coordinate;
+    if(mapVue && mapVue.formTest){
+        addCoordinate4Vue(coordinate);
+    }
     var pixel = map.getEventPixel(evt.originalEvent);
     var feature = map.forEachFeatureAtPixel(pixel, function (feature, layer) {
         return feature;
     });
+}
+function addCoordinate4Vue(coordinate){
+    let coordsVal = coordinate;
+    let valContext = '';
+    let cfgs = {
+        coordsVal:coordinate[0]+','+coordinate[1]
+        // valContext:0,
+        // carouselVal:''
+    }
+    mapVue.formTest.colVals.push(cfgs);
 }
 function pointerMove(evt,converLayer,featureOverlay,highlight,map){
     var pixel = map.getEventPixel(evt.originalEvent);
@@ -572,18 +586,18 @@ function addHotMap(features){
 
 function removeHotMap() {
     if(this.hotVector){
-        map.removeLayer(this.hotVector);
+        this.map.removeLayer(this.hotVector);
         this.hotVector=undefined;
     }
 }
 
 function showHotMap(heatData){
     if(this.loopHotVector){
-        map.removeLayer(this.loopHotVector);
+        this.map.removeLayer(this.loopHotVector);
     }
     //矢量图层 获取geojson数据
     var vectorSource = new ol.source.Vector({
-        features: (new ol.format.GeoJSON()).readFeatures(heatData[0],{
+        features: (new ol.format.GeoJSON()).readFeatures(heatData,{
             dataProjection : 'EPSG:4326',
             featureProjection : 'EPSG:4326'
         })
@@ -601,13 +615,13 @@ function showHotMap(heatData){
         //'vector'：矢量图层呈现为矢量。即使在动画期间也能获得最准确的渲染，但性能会降低。
         renderMode: 'hotVector'
     });
-    map.addLayer(this.loopHotVector);
+    this.map.addLayer(this.loopHotVector);
 
 }
 var dataIndex=0;
 function loopShowHotMap(heatDatas){
-    $('#year').html(heatDatas[dataIndex].date+heatDatas[dataIndex].text+'分布情况');
-    showHotMap(heatDatas[dataIndex].heatData);
+    // $('#year').html(heatDatas[dataIndex].date+heatDatas[dataIndex].text+'分布情况');
+    showHotMap(heatDatas[dataIndex]);
     dataIndex++;
     if(dataIndex==heatDatas.length){
         dataIndex=0;

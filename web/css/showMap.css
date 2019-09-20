@@ -25,6 +25,22 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
     right: 15px;
     z-index:11;
 }
+.caroule_marks_right{
+    position:absolute;
+    z-index:11;
+    width:200px;
+    right: 5px;
+    bottom: 405px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 22px;
+    /*background-color: rgba(88, 131, 226, 0.7);*/
+}
+.caroule_marks_middel{
+    line-height: 30px;
+    height: 30px;
+    color: #F81303;
+}
 .bottom_right{
     position:absolute;
     z-index:10;
@@ -45,5 +61,5 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
 .div_middle{
     line-height: 30px;
     height: 30px;
-    color: white;
+    color: #d83504;
 }

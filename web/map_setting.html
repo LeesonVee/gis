@@ -157,7 +157,7 @@
                                 </el-form-item>
                                 <el-form-item label="添加事件" style="text-align: left;">
                                     <el-checkbox-group v-model="form.events">
-                                        <el-checkbox label="singleClick" key="singleClick">单击</el-checkbox>
+                                        <el-checkbox label="singleclick" key="singleclick">单击</el-checkbox>
                                         <el-checkbox label="pointermove" key="pointermove">鼠标滑过</el-checkbox>
                                         <el-checkbox label="moveend" key="moveend">缩放</el-checkbox>
                                     </el-checkbox-group>
@@ -275,8 +275,82 @@
                                     </el-collapse-item>
                                 </el-collapse>
                             </el-tab-pane>
+                            <el-tab-pane label="数据采集" name="addData">
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">表名</el-col>
+                                    <el-col :span="18">
+                                        <el-input size="small" v-model="formTest.tableName" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">经纬字段</el-col>
+                                    <el-col :span="18">
+                                        <el-input size="small" v-model="formTest.coordsCol" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">轮播字段</el-col>
+                                    <el-col :span="18">
+                                        <el-input size="small" v-model="formTest.carouselCol" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">轮播值</el-col>
+                                    <el-col :span="18">
+                                        <el-input size="small" v-model="formTest.carouselVal" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">值字段</el-col>
+                                    <el-col :span="18">
+                                        <el-input size="small" v-model="formTest.valCol" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row style="margin-top: 15px;">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">值范围</el-col>
+                                    <el-col :span="8">
+                                        <el-input size="small" v-model="formTest.valRange1" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1">-</el-col>
+                                    <el-col :span="8">
+                                        <el-input size="small" v-model="formTest.valRange2" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="2">&nbsp;</el-col>
+                                </el-row>
+                                <div v-for="item in formTest.colVals">
+                                    <el-row style="margin-top: 15px;">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="4">经纬度值</el-col>
+                                        <el-col :span="18">
+                                            <el-input size="small" v-model="item.coordsVal" placeholder="请输入内容"></el-input>
+                                        </el-col>
+                                        <el-col :span="1">&nbsp;</el-col>
+                                    </el-row>
+                                </div>
+                                <div style="margin-top: 15px;">
+                                    <el-row>
+                                        <el-col :span="5">&nbsp;</el-col>
+                                        <el-col :span="18" style="text-align: left;">
+                                            <el-button type="primary" @click="doSaveCoordData">保存</el-button>
+                                        </el-col>
+                                        <el-col :span="1">&nbsp;</el-col>
+                                    </el-row>
+                                </div>
+                            </el-tab-pane>
                         </el-tabs>
                     </el-form>
+
                 </el-main>
                 <el-footer>
                     <el-form label-width="100px">
@@ -329,7 +403,13 @@
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
-                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='4'">
+                        <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='2'">
+                            <el-radio-group v-model="formMarks.carouselColType" @change="changeCarouselColTypeRadio">
+                                <el-radio :label="0">否</el-radio>
+                                <el-radio :label="1">是</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='4' || (formMarks.dataType=='2' && formMarks.carouselColType=='1')">
                             <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
@@ -338,6 +418,12 @@
                             <el-select v-model="formMarks.valCol" placeholder="请选择字段">
                                 <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
+                        </el-form-item>
+                        <el-form-item label="渲染方式" prop="hotType" v-if="formMarks.dataType=='2'">
+                            <el-radio-group v-model="formMarks.hotType">
+                                <el-radio :label="0">个数渲染</el-radio>
+                                <el-radio :label="1">数值渲染</el-radio>
+                            </el-radio-group>
                         </el-form-item>
                         <el-form-item label="样式选择">
                             <el-radio-group v-model="formMarks.styleType">
@@ -390,7 +476,7 @@
     </el-dialog>
 </div>
 <script type="text/javascript">
-    new Vue({
+    var mapVue= new Vue({
         el: '#app',
         data:{
             dialogDataOperate:'',
@@ -417,6 +503,7 @@
                 displayNameStatus:true,
                 addressCol:'',
                 coordCol:'',
+                carouselColType:0,
                 carouselCol:'',
                 valCol:'',
                 styleType:0,
@@ -437,7 +524,8 @@
                 textStrokeWidth:2,
                 opt:'add',
                 MODEL_RELATION_ID:'',
-                dataType:'1'
+                dataType:'1',
+                hotType:0,
             },
             dialogRules:{
                 name: [
@@ -546,7 +634,17 @@
             cityOption:[],
             districts:[],
             districtOption:[],
-            timer:''
+            timer:'',
+            formTest:{
+                tableName:'',
+                coordsCol:'',
+                carouselCol:'',
+                carouselVal:'',
+                valCol:'',
+                valRange1:'',
+                valRange2:'',
+                colVals:[]
+            }
         },
         created(){
             this.loadParam();
@@ -785,6 +883,8 @@
                 this.formMarks.addressCol='';
                 this.formMarks.coordCol='';
                 this.formMarks.carouselCol='';
+                this.formMarks.carouselColType=0;
+                this.formMarks.hotType=0;
                 this.formMarks.valCol='';
                 this.formMarks.styleType=0;
                 this.formMarks.status='1';
@@ -990,6 +1090,9 @@
                 this.formMarks.status='1';
                 this.formMarks.opt=optType;
                 if(optType=='add'){
+                    if(dataType=='2'){
+
+                    }
                     this.initDialogParam(true);
                 }else if(optType=='modify'){
                     let params = {
@@ -1032,6 +1135,8 @@
                 marksStyleData['textStrokeWidth'] = formMarks.textStrokeWidth;
                 marksStyleData['styleType'] = formMarks.styleType;
                 marksStyleData['displayNameStatus'] = formMarks.displayNameStatus;
+                marksStyleData['carouselColType']=formMarks.carouselColType;
+                marksStyleData['hotType']=formMarks.hotType;
                 data['MODEL_RELATION_NAME']=formMarks.name;
                 data['MODEL_RELATION_TYPE']=formMarks.dataType;
                 if(formMarks.opt=='modify'){
@@ -1057,12 +1162,15 @@
 //                    this.myMessage('请先创建地图','warning');
 //                    return;
 //                }
-
+                let apiPath = configpre.map_queryTableDataByGisModelRelation;
                 let params = {modelRelation:[row]};
+                if(type=='2'){
+                    apiPath = configpre.map_queryHeatMapDataByGisModelRelation;
+                }
                 if(type=='4'){
                     params['isCarousel'] = true;
                 }
-                this.loadTableData('POST',configpre.map_queryTableDataByGisModelRelation,params,type);
+                this.loadTableData('POST',apiPath,params,type);
             },
             delModelRelation:function(index,row){
                 row['STATUS'] ='0';
@@ -1095,30 +1203,19 @@
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                         let body = json.body;
-                        me.showMark1(body,type);
-//                        cleanMarks();
-//                        body.forEach(item=>{
-//                            let cfgs = item.style;
-//                            if(typeof(cfgs)=='string'){
-//                                cfgs = JSON.parse(item.style);
-//                            }
-//                            let datas = item.data;
-//                            datas.forEach(data=>{
-//                                debugger;
-//                                let coords = eval(data.COORDS);
-//                                cfgs['lng']=coords[0];
-//                                cfgs['lat']=coords[1];
-//                                console.info(cfgs);
-//                                addMarksV2(cfgs);
-//                            });
-//                        });
+                        me.showData(body,type);
                     }
                 });
             },
-            showMark1:function(body,type){
-                cleanMarks();
+            /**
+             * 显示地图数据
+             * @param body
+             * @param type
+             */
+            showData:function(body,type){
                 switch(type){
                     case '1':
+                        cleanMarks();
                         body.forEach(item=>{
                             let cfgs = item.style;
                             if(typeof(cfgs)=='string'){
@@ -1133,9 +1230,13 @@
                             });
                         });
                         break;
-                    case '2':break;
+                    case '2':
+//                        loopShowHotMap(heatDatas1);
+                        loopShowHotMap(body.heatData);
+                        break;
                     case '3':break;
                     case '4':
+                        cleanMarks(true);
                         this.carourselData(body);
                     default:break;
                 }
@@ -1143,8 +1244,12 @@
             },
             carourselData:function(body){
                 this.closeCarourse();
+                if(!body || !body.data || body.data.length==0){
+                    return;
+                }
+                let bodyData = body.data;
                 let group=[];
-                for(let p in body){
+                for(let p in bodyData){
                     group.push(p);
                 }
                 let i=0;
@@ -1152,7 +1257,7 @@
                 function carourselFn(){
                     cleanMarks(true);
                     let el = group[i];
-                    let data = body[el]||[];
+                    let data = bodyData[el]||[];
                     data.forEach(item=>{
                         let itemData = item.data;
                         let cfgs = JSON.parse(item.style);
@@ -1193,6 +1298,11 @@
                 this.formMarks.iconName = item.iconName;
                 this.formMarks.iconType = item.iconType;
             },
+            changeCarouselColTypeRadio:function(val){
+                if(val=='0'){
+                    this.formMarks.carouselCol='';
+                }
+            },
             changeIconRadio:function(val){
                 debugger;
                 if(val == '1'){
@@ -1207,6 +1317,18 @@
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200'){
                         me.iconList= json.body||[];
+                    }
+                });
+            },
+            doSaveCoordData:function(){
+                debugger;
+//                console.info(this.formTest);
+                let me = this;
+                let jsonDataList = this.rquestParams('POST',configpre.api_rootPath+'map/testAddCoords.html',this.formTest);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.myMessage('保存成功','success');
+//                        me.formTest.colVals=[];
                     }
                 });
             }

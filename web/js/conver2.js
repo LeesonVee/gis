@@ -84,7 +84,8 @@
         var layers = [
             new ol.layer.Tile({
                 source: new ol.source.XYZ({
-                    url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
+                    url:configpre.api_rootPath+'static/imgXYZ/amap/{z}-{x}-{y}.jpg'
+                    // url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}'
                 })
             }),
             layer
@@ -430,80 +431,73 @@
             hotVector=undefined;
         }
     }
-    var heatDatas =[{
+    var heatDatas1 = [{
+        type: "FeatureCollection",
         date:'2016年',
         text:'流感',
-        heatData:[{
-            type: "FeatureCollection",
-            features:  [
-                {type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
-                {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
-                {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
-                {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
-                {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
-                {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
-                {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
-                {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
-                {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
-                {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
-                {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
-                {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
-                {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
-                {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
-                {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
-                {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
-                {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
-                {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
-                {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
-                {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
-                {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
-                {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
-                {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}
-            ]
-        }]
+        features:  [
+            {type: "Point","coordinates": [113.38817998766899, 23.228823244571686], count: 10},
+            {type: "Point","coordinates": [113.3846393879503, 23.178168972954154], count: 1},
+            {type: "Point","coordinates": [113.37045326828957, 23.17977737635374], count: 1},
+            {type: "Point","coordinates": [113.37186109274626, 23.180253468453884], count: 1},
+            {type: "Point","coordinates": [113.36917284876108, 23.17991215735674], count: 1},
+            {type: "Point","coordinates": [113.36940318346024, 23.181409500539303], count: 1},
+            {type: "Point","coordinates": [113.3704049885273, 23.17987024784088], count: 1},
+            {type: "Point","coordinates": [113.37753765285015, 23.16808059811592], count: 1},
+            {type: "Point","coordinates": [113.34545910358429, 23.17575842142105], count: 1},
+            {type: "Point","coordinates": [113.37470322847366, 23.187069967389107], count: 1},
+            {type: "Point","coordinates": [113.39552574100004,23.117307946999979], count: 1},
+            {type: "Point","coordinates": [113.39597693700001,23.115412739000011], count: 1},
+            {type: "Point","coordinates": [113.39604102299997,23.114307607], count: 1},
+            {type: "Point","coordinates": [113.39599813300006,23.11260939499999], count: 1},
+            {type: "Point","coordinates": [113.39413281800002,23.11325236499999], count: 1},
+            {type: "Point","coordinates": [113.39376675600001,23.11337836], count: 1},
+            {type: "Point","coordinates": [113.39361577499997,23.11278627699999], count: 1},
+            {type: "Point","coordinates": [113.39307986100007,23.110417953000013], count: 1},
+            {type: "Point","coordinates": [113.39245790400004,23.108463675999982], count: 1},
+            {type: "Point","coordinates": [113.39209690500005,23.10770456099999], count: 1},
+            {type: "Point","coordinates": [113.39137878600003,23.107906544], count: 1},
+            {type: "Point","coordinates": [113.38968451100006,23.108328497], count: 1},
+            {type: "Point","coordinates": [113.38809525500007,23.108694449999966], count: 1}
+        ]
     },{
+        type: "FeatureCollection",
         date:'2017年',
         text:'流感',
-        heatData:[{
-            type: "FeatureCollection",
-            features:  [
-                {type: "Point","coordinates": [113.40006351470947, 23.193875402212143], count: 10},
-                {type: "Point","coordinates": [113.40668454766273, 23.18638265132904], count: 10},
-                {type: "Point","coordinates": [113.41117456555367, 23.1967855989933], count: 10},
-                {type: "Point","coordinates": [113.39844614267349, 23.193812370300293], count: 10},
-            ]
-        }]
+        features:  [
+            {type: "Point","coordinates": [113.40006351470947, 23.193875402212143], count: 10},
+            {type: "Point","coordinates": [113.40668454766273, 23.18638265132904], count: 10},
+            {type: "Point","coordinates": [113.41117456555367, 23.1967855989933], count: 10},
+            {type: "Point","coordinates": [113.39844614267349, 23.193812370300293], count: 10},
+        ]
     },{
+        type: "FeatureCollection",
         date:'2018年',
         text:'流感',
-        heatData:[{
-            type: "FeatureCollection",
-            features:  [
-                {type: "Point","coordinates": [113.3544471859932, 23.203421384096146], count: 10},
-                {type: "Point","coordinates": [113.35447132587433, 23.22862207889557], count: 10},
-                {type: "Point","coordinates": [113.35406497120857, 23.190349638462067], count: 10},
-                {type: "Point","coordinates": [113.37615698575974, 23.19352000951767], count: 10},
-            ]
-        }]
+        features:  [
+            {type: "Point","coordinates": [113.3544471859932, 23.203421384096146], count: 10},
+            {type: "Point","coordinates": [113.35447132587433, 23.22862207889557], count: 10},
+            {type: "Point","coordinates": [113.35406497120857, 23.190349638462067], count: 10},
+            {type: "Point","coordinates": [113.37615698575974, 23.19352000951767], count: 10},
+        ]
     },{
-        date:'2019年',
+        type: "FeatureCollection",
+        date:'2018年',
         text:'流感',
-        heatData:[{
-            type: "FeatureCollection",
-            features:  [
-                {type: "Point","coordinates": [113.34618732333183, 23.161409944295883], count: 10},
-                {type: "Point","coordinates": [113.36334809660912, 23.162637054920197], count: 10}
-            ]
-        }]
+        features:  [
+            {type: "Point","coordinates": [113.34618732333183, 23.161409944295883], count: 10},
+            {type: "Point","coordinates": [113.36334809660912, 23.162637054920197], count: 10}
+        ]
     }];
+
     var loopHotVector;
-    function showHotMap(heatData){
+    function showHotMap(heatDatas1){
         if(loopHotVector){
             map.removeLayer(loopHotVector);
         }
         //矢量图层 获取geojson数据
         var vectorSource = new ol.source.Vector({
-            features: (new ol.format.GeoJSON()).readFeatures(heatData[0],{
+            features: (new ol.format.GeoJSON()).readFeatures(heatDatas1,{
                 dataProjection : 'EPSG:4326',
                 featureProjection : 'EPSG:4326'
             })
@@ -529,10 +523,12 @@
     // }, 3000);
 
     function loopShowHotMap(){
-        document.getElementById("year").innerHTML=heatDatas[dataIndex].date+heatDatas[dataIndex].text+'分布情况';
-        showHotMap(heatDatas[dataIndex].heatData);
+        document.getElementById("year").innerHTML=heatDatas1[dataIndex].date+heatDatas1[dataIndex].text+'分布情况';
+        // document.getElementById("year").innerHTML=heatDatas[dataIndex].date+heatDatas[dataIndex].text+'分布情况';
+        // showHotMap(heatDatas[dataIndex].heatData);
+        showHotMap(heatDatas1[dataIndex]);
         dataIndex++;
-        if(dataIndex==heatDatas.length){
+        if(dataIndex==heatDatas1.length){
             dataIndex=0;
         }
     }

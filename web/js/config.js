@@ -7,6 +7,7 @@
     let projectName=pathName.substring(0,pathName.substr(1).indexOf('/')+1);
     configpre.projectPath=localhostPath+projectName;
     let apiRootPath='http://127.0.0.1:8120/hub/';
+    // let apiRootPath='http://10.32.0.169:8120/hub/';
     // let apiRootPath='http://10.195.237.115:8120/hub/';
     configpre.api_rootPath=apiRootPath;
     configpre.map_saveMapData=apiRootPath+'map/saveMapData.html';
@@ -17,10 +18,12 @@
     configpre.map_saveModelRelation=apiRootPath+'map/saveModelRelation.html';
     configpre.api_loadColsByTableNameAndModleId=apiRootPath+'api/loadColsByTableNameAndModleId.html';
     configpre.map_queryTableDataByGisModelRelation=apiRootPath+'map/queryTableDataByGisModelRelation.html';
+    configpre.map_queryHeatMapDataByGisModelRelation=apiRootPath+'map/queryHeatMapDataByGisModelRelation.html';
     configpre.map_getGisIcon=apiRootPath+'map/getGisIcon.html';
     configpre.map_getOrganInfoByAreaCode=apiRootPath+'map/getOrganInfoByAreaCode.html';
     configpre.map_getMapByPkey=apiRootPath+'map/getMapByPkey.html';
 
     configpre.webGisPath='http://127.0.0.1:8140/gis/';
+    // configpre.webGisPath='http://10.32.0.169:8140/gis/';
     // configpre.webGisPath='http://10.195.237.116:8140/gis/';
 })(window);
