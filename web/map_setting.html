@@ -50,10 +50,27 @@
             color: #333;
             line-height: 60px;
         }
+        .row_background{
+            background: #f0f9eb;
+        }
+        .float_dialog{
+            position: absolute;
+            width:200px;
+            z-index:11;
+            color: red;
+            font-weight: bold;
+            background: rgba(88, 131, 226, 0.2);
+        }
     </style>
 </head>
 <body>
 <div id="app">
+    <div v-if="floatDialog" id="floatDialog" class="float_dialog" :style="{top:floatDialogTop+'px',left:floatDialogLeft+'px'}">
+        <div v-for="item in floatDialogData">
+            <el-col :span="8" style="text-align: right;">{{item.name}}:</el-col>
+            <el-col :span="16">{{item.val}}</el-col>
+        </div>
+    </div>
     <el-container>
         <el-main class="my-el-main">
             <div :id="form.target" style="width: 100%;height: 100%;"></div>
@@ -148,7 +165,7 @@
                                         <el-col :span="24">
                                             <el-form-item prop="mapType">
                                                 <el-select v-model="form.mapType" placeholder="请选择">
-                                                    <el-option label="高的地图" value="amap"></el-option>
+                                                    <el-option label="高德地图" value="amap"></el-option>
                                                     <!--<el-option label="百度地图" value="baidu"></el-option>-->
                                                 </el-select>
                                             </el-form-item>
@@ -188,94 +205,123 @@
                                 </el-form-item>
                             </el-tab-pane>
                             <el-tab-pane label="数据绑定" name="bindData">
-                                <el-collapse v-model="activeDatas">
-                                    <el-collapse-item title="散点图" name="1">
-                                        <el-row>
+                                <el-row style="text-align: left;font-weight: bold;font-size: 18px;cursor: pointer;">
+                                    <el-col :span="24">
+                                        <div @click="choiceModelClick"><icon class="el-icon-connection" style="color: rgb(51, 122, 183);"></icon>&nbsp;&nbsp;{{choiceModelName}}</div>
+                                    </el-col>
+                                </el-row>
+                                <div v-show="!modelDataChoice">
+                                    <el-row>
+                                        <div @click="choiceModelClick">
                                             <el-col :span="24">
-                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('1','add')"></i>
-                                                </div>
+                                                <table class="table table-bordered" id="datamodeltable"  style="table-layout: fixed;word-break: break-all;text-align: center">
+                                                    <thead>
+                                                    <tr><td width="15%">序号</td><td style="display: none">ID</td><td>名称</td></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr v-for="(item, index) in models" v-cloak  @click="dealModelData('dataModel',item,$event)" style="cursor: pointer">
+                                                        <td>{{index+1}}</td>
+                                                        <td style="display: none">{{item.ID}}</td>
+                                                        <td>{{item.CN_NAME}}</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
                                             </el-col>
-                                        </el-row>
-                                        <el-row>
-                                            <el-table :data="marksHeadData" border style="width: 100%" size="mini" max-height="350">
-                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                <el-table-column label="样式设置">
-                                                    <template slot-scope="scope">
-                                                        <el-button @click="showMarks(scope.$index,scope.row,'1')" type="text" size="small">显示</el-button>
-                                                        <el-button @click="modifyClick(scope.$index,scope.row,'1')" type="text" size="small">修改</el-button>
-                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'1')" type="text" size="small">删除</el-button>
-                                                    </template>
-                                                </el-table-column>
-                                            </el-table>
-                                        </el-row>
-                                    </el-collapse-item>
-                                    <el-collapse-item title="热力图" name="2">
-                                        <el-row>
-                                            <el-col :span="24">
-                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('2','add')"></i>
-                                                </div>
-                                            </el-col>
-                                        </el-row>
-                                        <el-row>
-                                            <el-table :data="hotMapData" border style="width: 100%" size="mini" max-height="350">
-                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                <el-table-column label="样式设置">
-                                                    <template slot-scope="scope">
-                                                        <el-button @click="showMarks(scope.$index,scope.row,'2')" type="text" size="small">显示</el-button>
-                                                        <el-button @click="modifyClick(scope.$index,scope.row,'2')" type="text" size="small">修改</el-button>
-                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'2')" type="text" size="small">删除</el-button>
-                                                    </template>
-                                                </el-table-column>
-                                            </el-table>
-                                        </el-row>
-                                    </el-collapse-item>
-                                    <el-collapse-item title="标注" name="3">
-                                        <el-row>
-                                            <el-col :span="24">
-                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('3','add')"></i>
-                                                </div>
-                                            </el-col>
-                                        </el-row>
-                                        <el-row>
-                                            <el-table :data="lableMapData" border style="width: 100%" size="mini" max-height="350">
-                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                <el-table-column label="样式设置">
-                                                    <template slot-scope="scope">
-                                                        <el-button @click="showMarks(scope.$index,scope.row,'3')" type="text" size="small">显示</el-button>
-                                                        <el-button @click="modifyClick(scope.$index,scope.row,'3')" type="text" size="small">修改</el-button>
-                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'3')" type="text" size="small">删除</el-button>
-                                                    </template>
-                                                </el-table-column>
-                                            </el-table>
-                                        </el-row>
-                                    </el-collapse-item>
-                                    <el-collapse-item title="轮播图" name="4">
-                                        <el-row>
-                                            <el-col :span="24">
-                                                <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
-                                                    <i title="添加" class="el-icon-circle-plus" @click="openWin('4','add')"></i>
-                                                </div>
-                                            </el-col>
-                                        </el-row>
-                                        <el-row>
-                                            <el-table :data="carouselMapData" border style="width: 100%" size="mini" max-height="350">
-                                                <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                <el-table-column label="样式设置">
-                                                    <template slot-scope="scope">
-                                                        <el-button @click="showMarks(scope.$index,scope.row,'4')" type="text" size="small">显示</el-button>
-                                                        <el-button @click="modifyClick(scope.$index,scope.row,'4')" type="text" size="small">修改</el-button>
-                                                        <el-button @click="delModelRelation(scope.$index,scope.row,'4')" type="text" size="small">删除</el-button>
-                                                    </template>
-                                                </el-table-column>
-                                            </el-table>
-                                        </el-row>
-                                    </el-collapse-item>
-                                </el-collapse>
+                                        </div>
+
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="24">
+                                            <el-pagination
+                                                    @current-change="handleCurrentChange"
+                                                    :current-page.sync="currentPage"
+                                                    :page-size="pageSize"
+                                                    :prev-text="prevText"
+                                                    :next-text="nextText"
+                                                    layout="prev,next,jumper"
+                                                    :total="totalCount">
+                                            </el-pagination>
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                                <div v-show="modelDataChoice">
+                                    <el-collapse v-model="activeDatas">
+                                        <el-collapse-item title="散点图" name="1">
+                                            <el-row>
+                                                <el-col :span="24">
+                                                    <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                        <i title="添加" class="el-icon-circle-plus" @click="openWin('1','add')"></i>
+                                                    </div>
+                                                </el-col>
+                                            </el-row>
+                                            <el-row>
+                                                <el-table :data="marksHeadData" border style="width: 100%" size="mini" max-height="350">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                    <el-table-column label="样式设置">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="showMarks(scope.$index,scope.row,'1')" type="text" size="small">显示</el-button>
+                                                            <el-button @click="modifyClick(scope.$index,scope.row,'1')" type="text" size="small">修改</el-button>
+                                                            <el-button @click="delModelRelation(scope.$index,scope.row,'1')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                </el-table>
+                                            </el-row>
+                                        </el-collapse-item>
+                                        <el-collapse-item title="热力图" name="2">
+                                            <el-row>
+                                                <el-col :span="24">
+                                                    <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                        <i title="添加" class="el-icon-circle-plus" @click="openWin('2','add')"></i>
+                                                    </div>
+                                                </el-col>
+                                            </el-row>
+                                            <el-row>
+                                                <el-table :data="hotMapData" border style="width: 100%" size="mini" max-height="350">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                    <el-table-column label="样式设置">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="showMarks(scope.$index,scope.row,'2')" type="text" size="small">显示</el-button>
+                                                            <el-button @click="modifyClick(scope.$index,scope.row,'2')" type="text" size="small">修改</el-button>
+                                                            <el-button @click="delModelRelation(scope.$index,scope.row,'2')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                </el-table>
+                                            </el-row>
+                                        </el-collapse-item>
+                                        <el-collapse-item title="标注" name="3">
+                                            <el-row>
+                                                <el-col :span="24">
+                                                    <div style="margin: 5px;text-align: left;font-size: 30px;color: #3a8ee6;">
+                                                        <i title="添加" class="el-icon-circle-plus" @click="openWin('3','add')"></i>
+                                                    </div>
+                                                </el-col>
+                                            </el-row>
+                                            <el-row>
+                                                <el-table :data="lableMapData" border style="width: 100%" size="mini" max-height="350">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
+                                                    <el-table-column label="样式设置">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="showMarks(scope.$index,scope.row,'3')" type="text" size="small">显示</el-button>
+                                                            <el-button @click="modifyClick(scope.$index,scope.row,'3')" type="text" size="small">修改</el-button>
+                                                            <el-button @click="delModelRelation(scope.$index,scope.row,'3')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                </el-table>
+                                            </el-row>
+                                        </el-collapse-item>
+                                    </el-collapse>
+                                </div>
                             </el-tab-pane>
                             <el-tab-pane label="数据采集" name="addData">
+                                <div style="margin-top: 15px;">
+                                    <el-row>
+                                        <el-col :span="5">&nbsp;</el-col>
+                                        <el-col :span="18" style="text-align: left;">
+                                            <el-button type="primary" @click="doSaveCoordData">保存</el-button>
+                                        </el-col>
+                                        <el-col :span="1">&nbsp;</el-col>
+                                    </el-row>
+                                </div>
                                 <el-row style="margin-top: 15px;">
                                     <el-col :span="1">&nbsp;</el-col>
                                     <el-col :span="4">表名</el-col>
@@ -338,19 +384,9 @@
                                         <el-col :span="1">&nbsp;</el-col>
                                     </el-row>
                                 </div>
-                                <div style="margin-top: 15px;">
-                                    <el-row>
-                                        <el-col :span="5">&nbsp;</el-col>
-                                        <el-col :span="18" style="text-align: left;">
-                                            <el-button type="primary" @click="doSaveCoordData">保存</el-button>
-                                        </el-col>
-                                        <el-col :span="1">&nbsp;</el-col>
-                                    </el-row>
-                                </div>
                             </el-tab-pane>
                         </el-tabs>
                     </el-form>
-
                 </el-main>
                 <el-footer>
                     <el-form label-width="100px">
@@ -362,54 +398,111 @@
 
         </el-aside>
     </el-container>
-
-    <el-dialog :title="dialogDataOperate+title" :visible.sync="dialogDatabing" width="55%">
-        <el-container style="height: 500px; border: 1px solid #eee;">
-            <el-aside width="300px" style="background-color: rgb(238, 241, 246)">
-                <el-collapse v-model="activeDataModel">
-                    <el-collapse-item v-for="(item,index) in modelData" :name="index">
-                        <template slot="title">
-                            <div style="font-weight: bold;margin-left: 15px;">{{item.DNAME}}</div>
-                        </template>
-                        <el-row v-for="childItem in item.CHILD">
-                            <el-col :span="1">&nbsp;</el-col>
-                            <el-col :span="22"><el-radio v-model="modelRadio" :label="childItem.MID" @change="modelChange(childItem.MID,childItem.EN_NAME)">{{childItem.MNAME}}</el-radio></el-col>
-                            <el-col :span="1">&nbsp;</el-col>
-                            <el-col :span="24">&nbsp;</el-col>
-                        </el-row>
-                    </el-collapse-item>
-                </el-collapse>
-            </el-aside>
-
+    <el-dialog :title="dialogDataOperate+title" :visible.sync="dialogDatabing" width="45%">
+        <el-dialog width="30%" title="样式设定" :visible.sync="innerVisible" append-to-body>
+            <el-form ref="formMarks" :model="formMarks" lable-width="95">
+                <el-form-item label="样式选择">
+                    <el-radio-group v-model="formMarks.styleType">
+                        <el-radio :label="0">默认</el-radio>
+                        <el-radio :label="1">自定义</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <div v-if="formMarks.styleType=='1'">
+                    <el-form-item label="显示方式" v-if="formMarks.dataType!='1' && formMarks.dataType!='2'">
+                        <el-radio-group v-model="formMarks.iconStatus">
+                            <el-radio :label="0">默认圆点</el-radio>
+                            <el-radio :label="1">图标</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                    <div v-if="formMarks.iconStatus=='0'" style="text-align: left;">
+                        <el-form-item label="原点大小">
+                            <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="原点颜色">
+                            <el-color-picker v-model="formMarks.imageColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="文字颜色">
+                            <el-color-picker v-model="formMarks.textFillColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="阴影颜色">
+                            <el-color-picker v-model="formMarks.textStrokeColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="阴影大小">
+                            <el-input-number v-model="formMarks.textStrokeWidth" :min="1" :max="10"></el-input-number>
+                        </el-form-item>
+                    </div>
+                    <div v-else style="text-align: left;">
+                        <el-form-item label="图标清单" prop="iconData">
+                            <el-select v-model="formMarks.iconData" placeholder="请选择图标" @change="iconChangeData">
+                                <el-option v-for="(item,index) in iconList" :key="index" :label="item.iconNameCn" :value="index"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </div>
+                </div>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="innerVisible = false">取 消</el-button>
+                <el-button type="primary" @click="saveStyleData">保 存</el-button>
+            </div>
+        </el-dialog>
+        <el-dialog width="30%" title="悬浮框设定" :visible.sync="innerFloatVisible" append-to-body>
+            <el-table ref="multipleTable1" :data="floatData" @selection-change="handleFloatSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
+                <el-table-column type="selection" width="35"></el-table-column>
+                <el-table-column label="字段">
+                    <template slot-scope="scope">{{ scope.row.COLUMN_RENAME }}</template>
+                </el-table-column>
+                <el-table-column label="数据别名">
+                    <template slot-scope="scope">
+                        <el-input size="mini" v-model="scope.row.dataLable"/>
+                    </template>
+                </el-table-column>
+                <el-table-column label="聚合函数">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.groupBy" placeholder="请选择字段" size="mini">
+                            <el-option v-for="item in groupBys" :key="item.key" :label="item.text" :value="item.key"></el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column label="排序">
+                    <template slot-scope="scope">
+                        <el-input size="mini" v-model="scope.row.orderNum"/>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="innerFloatVisible = false">取 消</el-button>
+                <el-button type="primary" @click="doSaveModelDataFloat">保 存</el-button>
+            </div>
+        </el-dialog>
+        <div v-if="dialogType=='1' || dialogType=='3'">
             <el-container>
-                <el-header style="text-align: left; font-size: 12px">
-                    <span>表单信息</span>
-                </el-header>
-
-                <el-main>
-                    <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="95px" v-if="modelRadio!=''">
+                <el-aside width="350px">
+                    <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="95px">
                         <el-form-item :label="title+'名称'" prop="name">
-                            <el-col :span="12"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
-                            <el-col :span="2">&nbsp;</el-col>
-                            <el-col :span="10"><el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch></el-col>
+                            <el-col :span="21"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
                         </el-form-item>
-                        <el-form-item label="地址绑定" prop="addressCol">
-                            <el-select v-model="formMarks.addressCol" placeholder="请选择字段">
+                        <el-form-item label="区域名称" prop="addressCol">
+                            <el-select v-model="formMarks.addressCol" placeholder="请选择字段" @change="changeRegion">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
+                        <template v-if="formMarks.dataType=='3'">
+                            <el-form-item label="区域状态" prop="displayNameStatus">
+                                <el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch>
+                            </el-form-item>
+                        </template>
                         <el-form-item label="地理位置" prop="coordCol">
-                            <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
+                            <el-select v-model="formMarks.coordCol" placeholder="请选择字段" @change="changeCoordCol">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
-                        <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='2'">
-                            <el-radio-group v-model="formMarks.carouselColType" @change="changeCarouselColTypeRadio">
+                        <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                            <el-radio-group v-model="formMarks.carouselColType">
                                 <el-radio :label="0">否</el-radio>
                                 <el-radio :label="1">是</el-radio>
                             </el-radio-group>
                         </el-form-item>
-                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='4' || (formMarks.dataType=='2' && formMarks.carouselColType=='1')">
+                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
                             <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
@@ -419,56 +512,123 @@
                                 <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
+                        <template v-if="formMarks.dataType=='1'">
+                            <el-form-item label="值状态" prop="displayNameStatus">
+                                <el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch>
+                            </el-form-item>
+                        </template>
                         <el-form-item label="渲染方式" prop="hotType" v-if="formMarks.dataType=='2'">
                             <el-radio-group v-model="formMarks.hotType">
                                 <el-radio :label="0">个数渲染</el-radio>
                                 <el-radio :label="1">数值渲染</el-radio>
                             </el-radio-group>
                         </el-form-item>
-                        <el-form-item label="样式选择">
-                            <el-radio-group v-model="formMarks.styleType">
-                                <el-radio :label="0">默认</el-radio>
-                                <el-radio :label="1">自定义</el-radio>
-                            </el-radio-group>
-                        </el-form-item>
-                        <div v-if="formMarks.styleType=='1'">
-                            <el-form-item label="显示方式">
-                                <el-radio-group v-model="formMarks.iconStatus" @change="changeIconRadio">
-                                    <el-radio :label="0">默认圆点</el-radio>
-                                    <el-radio :label="1">图标</el-radio>
-                                </el-radio-group>
-                            </el-form-item>
-                            <div v-if="formMarks.iconStatus=='0'" style="text-align: left;">
-                                <el-form-item label="原点大小">
-                                    <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
-                                </el-form-item>
-                                <el-form-item label="原点颜色">
-                                    <el-color-picker v-model="formMarks.imageColor"></el-color-picker>
-                                </el-form-item>
-                                <el-form-item label="文字颜色">
-                                    <el-color-picker v-model="formMarks.textFillColor"></el-color-picker>
-                                </el-form-item>
-                                <el-form-item label="阴影颜色">
-                                    <el-color-picker v-model="formMarks.textStrokeColor"></el-color-picker>
-                                </el-form-item>
-                                <el-form-item label="阴影大小">
-                                    <el-input-number v-model="formMarks.textStrokeWidth" :min="1" :max="10"></el-input-number>
-                                </el-form-item>
-                            </div>
-                            <div v-else style="text-align: left;">
-                                <el-form-item label="图标清单" prop="iconData">
-                                    <el-select v-model="formMarks.iconData" placeholder="请选择图标" @change="iconChangeData">
-                                        <el-option v-for="(item,index) in iconList" :key="index" :label="item.iconNameCn" :value="index"></el-option>
-                                        <!--<el-option label="区域一" value="shanghai"></el-option>-->
-                                        <!--<el-option label="区域二" value="beijing"></el-option>-->
-                                    </el-select>
-                                </el-form-item>
-                            </div>
-                        </div>
                     </el-form>
-                </el-main>
+                </el-aside>
+                <el-container>
+                    <el-header>数据绑定</el-header>
+                    <el-main>
+                        <div class="show_table_button">
+                            <el-button @click="openSetStyleDialg('much')" size="mini">批量设置样式</el-button>
+                            <template v-if="formMarks.dataType=='3'">
+                                <el-button @click="openSetFloatDialog" size="mini">悬浮框设置</el-button>
+                            </template>
+                        </div>
+                        <el-table ref="multipleTable" :data="tableDatas" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
+                            <el-table-column type="selection" width="35"></el-table-column>
+                            <el-table-column label="名称">
+                                <template slot-scope="scope">{{ scope.row.REGION }}</template>
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button size="mini" @click="openSetStyleDialg('single',scope.row)">样式设定</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-main>
+                </el-container>
             </el-container>
-        </el-container>
+        </div>
+        <div v-else>
+            <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="95px">
+                <el-form-item :label="title+'名称'" prop="name">
+                    <el-col :span="12"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10"><el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch></el-col>
+                </el-form-item>
+                <el-form-item label="地址绑定" prop="addressCol">
+                    <el-select v-model="formMarks.addressCol" placeholder="请选择字段">
+                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="地理位置" prop="coordCol">
+                    <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
+                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                    <el-radio-group v-model="formMarks.carouselColType">
+                        <el-radio :label="0">否</el-radio>
+                        <el-radio :label="1">是</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                    <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
+                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="值绑定" prop="valCol">
+                    <el-select v-model="formMarks.valCol" placeholder="请选择字段">
+                        <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="渲染方式" prop="hotType" v-if="formMarks.dataType=='2'">
+                    <el-radio-group v-model="formMarks.hotType">
+                        <el-radio :label="0">个数渲染</el-radio>
+                        <el-radio :label="1">数值渲染</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="样式选择">
+                    <el-radio-group v-model="formMarks.styleType">
+                        <el-radio :label="0">默认</el-radio>
+                        <el-radio :label="1">自定义</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <div v-if="formMarks.styleType=='1'">
+                    <el-form-item label="显示方式" v-if="formMarks.dataType!='1' && formMarks.dataType!='2'">
+                        <el-radio-group v-model="formMarks.iconStatus">
+                            <el-radio :label="0">默认圆点</el-radio>
+                            <el-radio :label="1">图标</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                    <div v-if="formMarks.iconStatus=='0'" style="text-align: left;">
+                        <el-form-item label="原点大小">
+                            <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="原点颜色">
+                            <el-color-picker v-model="formMarks.imageColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="文字颜色">
+                            <el-color-picker v-model="formMarks.textFillColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="阴影颜色">
+                            <el-color-picker v-model="formMarks.textStrokeColor"></el-color-picker>
+                        </el-form-item>
+                        <el-form-item label="阴影大小">
+                            <el-input-number v-model="formMarks.textStrokeWidth" :min="1" :max="10"></el-input-number>
+                        </el-form-item>
+                    </div>
+                    <div v-else style="text-align: left;">
+                        <el-form-item label="图标清单" prop="iconData">
+                            <el-select v-model="formMarks.iconData" placeholder="请选择图标" @change="iconChangeData">
+                                <el-option v-for="(item,index) in iconList" :key="index" :label="item.iconNameCn" :value="index"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </div>
+                </div>
+            </el-form>
+        </div>
+
         <div slot="footer" class="dialog-footer">
             <el-button @click="dialogDatabing = false">取 消</el-button>
             <el-button type="primary" @click="submitDialogForm('formMarks')">确 定</el-button>
@@ -492,6 +652,18 @@
             pkey:'',
             activeName:'systemBase',
             activeDatas:['1'],
+            dialogType:'1',
+
+            modelDataChoice:false,
+            choiceModelName:'请选择数据模型',
+            models:[],
+            choiceModelData:'',
+            currentPage: 1,
+            pageSize: 5,
+            totalCount: 0,
+            prevText: '上一页',
+            nextText: '下一页',
+
             marksHeadData:[],
             hotMapData:[],
             lableMapData:[],
@@ -635,6 +807,7 @@
             districts:[],
             districtOption:[],
             timer:'',
+            loopHeatMap:'',
             formTest:{
                 tableName:'',
                 coordsCol:'',
@@ -644,7 +817,45 @@
                 valRange1:'',
                 valRange2:'',
                 colVals:[]
-            }
+            },
+
+
+            tableDatas:[],
+            innerVisible:false,
+            innerFloatVisible:false,
+            floatData :[{
+                colName:'address',
+                dataLable:'地址',
+                groupBy:'0',
+                orderNum:1
+            },{
+                colName:'address1',
+                dataLable:'地址2',
+                groupBy:'0',
+                orderNum:2
+            }],
+            cols:[],
+            groupBys:[{
+                key:'0',
+                text:'无'
+            },{
+                key:'1',
+                text:'求和'
+            }],
+            colDatas:[],
+            styleDatas:'',
+            saveFloatData:[],
+            floatDialog:false,
+            floatDialogTop:0,
+            floatDialogLeft:0,
+            floatDialogData:[{
+                val:'12',
+                name:'门诊人次'
+            },{
+                val:'古美',
+                name:'机构名称'
+            }],
+            allFloatDialogData:'',
         },
         created(){
             this.loadParam();
@@ -663,10 +874,13 @@
                         }
                         if(type=='create'){
                             initMap(cfgs);
+                            debugger;
+                            this.loadDataByEvents(cfgs.events);
                             this.showMap = true;
                         }else if(type='save'){
                             if(!this.showMap){
                                 initMap(cfgs);
+                                this.loadDataByEvents(cfgs.events);
                             }
                             let params = this.mapCfgs;
                             params['name'] = this.form.name;
@@ -682,6 +896,20 @@
                         return false;
                     }
                 });
+            },
+            loadDataByEvents:function(events){
+                if(events.length>0){
+                    events.forEach(item=>{
+                        switch (item){
+                            case 'singleclick':break;
+                            case 'pointermove':this.loadFloatDialogByEvent();break;
+                            case 'moveend':break;
+                        }
+                    });
+                }
+            },
+            loadFloatDialogByEvent:function(){
+                //加载悬浮框数据
             },
             resetForm:function(formName) {
                 this.$refs[formName].resetFields();
@@ -836,7 +1064,6 @@
                             +'</html>';
                 html=html.replace(/%/g,'%25');//将百分号转义
                 html=html.replace(/\+/g,'%2b');//将百分号转义
-                debugger;
                 let fileName='GIS_'+this.pkey;
                 let fileType="html";
                 let fileInfor={
@@ -866,14 +1093,16 @@
                 //加载行政区划数据
                 this.loadAreaCode('POST',configpre.map_loadAreaCodeData);
                 //加载标注数据
-                this.loadModelRelationData('POST',configpre.map_loadModelRelation);
+                //this.loadModelRelationData('POST',configpre.map_loadModelRelation);
                 //
-                this.loadModelData('POST',configpre.api_loadModelDataWithLayout);
+                //this.loadModelData('POST',configpre.api_loadModelDataWithLayout);
+                this.loadModel('POST',configpre.api_loadModels,{pageSize: this.pageSize, pageNo: 1});
             },
             initDialogParam:function(init){
                 if(init){
                     this.modelRadio='';
                     this.modelRadioEnName = '';
+                    this.tableDatas=[];
                 }
                 this.modifyIndex=-1;
                 this.dimensionColList=[];
@@ -941,7 +1170,6 @@
                 });
             },
             saveMarksData:function(data,index){
-                debugger
                 let me = this;
                 let type = this.formMarks.opt;
                 let dataType = data.MODEL_RELATION_TYPE;
@@ -1078,7 +1306,7 @@
              * @param row
              */
             openWin:function(dataType,optType,row){
-                debugger;
+                this.dialogType = dataType;
 //                if(!this.showMap){
 //                    this.myMessage('请先创建地图','warning');
 //                    return;
@@ -1094,13 +1322,15 @@
 
                     }
                     this.initDialogParam(true);
+                    this.modelChange(this.choiceModelData.ID,this.choiceModelData.EN_NAME);
                 }else if(optType=='modify'){
+                    this.changeRegion(row.RELATION_DIM_ADDRESS);
                     let params = {
                         MODEL_ID: row.MODEL_ID,
                         TABLE_NAME: row.TABLE_NAME
                     };
-                    this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params);
-                    this.modelRadio = row.MODEL_ID;
+                    this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params,row.RELATION_DIM_COOR);
+//                    this.modelRadio = row.MODEL_ID;
                     this.formMarks.name=row.MODEL_RELATION_NAME;
                     this.formMarks.addressCol=row.RELATION_DIM_ADDRESS;
                     this.formMarks.coordCol=row.RELATION_DIM_COOR;
@@ -1116,6 +1346,7 @@
                     }
                 }
             },
+
             saveDialogData:function(index){
                 let data ={};
                 let formMarks = this.formMarks;
@@ -1143,8 +1374,8 @@
                     data['MODEL_RELATION_ID'] = formMarks.MODEL_RELATION_ID;
                 }
                 data['STATUS'] = formMarks.status;
-                data['MODEL_ID']=this.modelRadio;
-                data['TABLE_NAME']=this.modelRadioEnName;
+                data['MODEL_ID']=this.choiceModelData.ID;
+                data['TABLE_NAME']=this.choiceModelData.EN_NAME;
                 data['RELATION_DIM_COOR']=formMarks.coordCol;
                 data['RELATION_DIM_CAROUSEL']=formMarks.carouselCol;
                 data['RELATION_DIM_ADDRESS']=formMarks.addressCol;
@@ -1155,6 +1386,7 @@
             modifyClick:function(index, row,type){
                 this.modifyIndex=index;
                 this.modelRadioEnName = row.TABLE_NAME;
+                this.modelRadio = row.MODEL_ID;
                 this.openWin(type,'modify',row);
             },
             showMarks:function(index,row,type){
@@ -1162,15 +1394,36 @@
 //                    this.myMessage('请先创建地图','warning');
 //                    return;
 //                }
-                let apiPath = configpre.map_queryTableDataByGisModelRelation;
+                debugger;
                 let params = {modelRelation:[row]};
+
+                let modelStyleData = row.MODEL_STYLE_DATA;
+                if(typeof(row.MODEL_STYLE_DATA) == "string"){
+                    modelStyleData = JSON.parse(row.MODEL_STYLE_DATA);
+                }
+                if(modelStyleData.carouselColType && modelStyleData.carouselColType=='1'){
+                    params['isCarousel'] = true;
+                }
+                let apiPath = configpre.map_queryTableDataByGisModelRelationV2;
                 if(type=='2'){
                     apiPath = configpre.map_queryHeatMapDataByGisModelRelation;
                 }
-                if(type=='4'){
-                    params['isCarousel'] = true;
-                }
                 this.loadTableData('POST',apiPath,params,type);
+                this.loadDialogDataByRelation(row);
+            },
+            loadDialogDataByRelation:function(row){
+                let data = {
+                    DATA_MODEL_ID:row.MODEL_ID,
+                    TABLE_NAME:row.TABLE_NAME,
+                    COORDS:row.RELATION_DIM_COOR
+                }
+                const me = this;
+                let jsonDataList = this.rquestParams('POST',configpre.map_loadFloatDialogByRelation,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.allFloatDialogData = json.body ||'';
+                    }
+                });
             },
             delModelRelation:function(index,row){
                 row['STATUS'] ='0';
@@ -1180,20 +1433,24 @@
             modelChange:function(modelId,tableName){
                 this.initDialogParam();
                 this.modelRadioEnName = tableName;
+                this.modelRadio = modelId;
                 let params = {
                     MODEL_ID: modelId,
                     TABLE_NAME: tableName
                 };
                 this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params);
             },
-            loadModelColumnData:function(method,api,data){
+            loadModelColumnData:function(method,api,data,floatCol){
                 let me = this;
                 let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200' && json.body){
                         let body = json.body;
-                        me.dimensionColList = body.dimensionColList;
-                        me.metricColList = body.metricColList;
+                        me.dimensionColList = body.dimensionColList ||[];
+                        me.metricColList = body.metricColList ||[];
+                        if(floatCol){
+                            me.changeCoordCol(floatCol);
+                        }
                     }
                 });
             },
@@ -1215,38 +1472,96 @@
             showData:function(body,type){
                 switch(type){
                     case '1':
-                        cleanMarks();
+                        this.carourselData(body);
+                        break;
+                    case '2':
+                        this.carourselHeatMap(body)
+                        break;
+                    case '3':
+                        this.cleanMapData();
                         body.forEach(item=>{
-                            let cfgs = item.style;
-                            if(typeof(cfgs)=='string'){
-                                cfgs = JSON.parse(item.style);
-                            }
+                            let cfgs={};
                             let datas = item.data;
                             datas.forEach(data=>{
+                                cfgs = data.style;
+                                if(typeof(cfgs)=='string'){
+                                    cfgs = JSON.parse(data.style);
+                                }
                                 let coords = eval(data.COORDS);
                                 cfgs['lng']=coords[0];
                                 cfgs['lat']=coords[1];
+                                cfgs['text']=data.ADDRESS;
+
                                 addMarksV2(cfgs);
                             });
                         });
                         break;
-                    case '2':
-//                        loopShowHotMap(heatDatas1);
-                        loopShowHotMap(body.heatData);
-                        break;
-                    case '3':break;
                     case '4':
-                        cleanMarks(true);
                         this.carourselData(body);
                     default:break;
                 }
                 this.drawer =false;
             },
-            carourselData:function(body){
+            carourselHeatMap:function(body){
+                this.cleanMapData();
+                let style = body.style;
+                if(typeof(style) == "string"){
+                    style = JSON.parse(body.style);
+                }
+                if(style.carouselColType && style.carouselColType=='1'){
+                    let dataIndex=0;
+                    this.loopHeatMap = setInterval(loopShowHotMapFn,2000);
+                    function loopShowHotMapFn(){
+                        let heatDatas = body.heatData;
+                        showHotMap(heatDatas[dataIndex]);
+                        dataIndex++;
+                        if(dataIndex==heatDatas.length){
+                            dataIndex=0;
+                        }
+                    }
+                }else{
+                    loopShowHotMap(body.heatData);
+                }
+            },
+            cleanMapData:function(){
+                cleanMarks();
+                cleanMarks(true);
+                this.cleanLoopHearMap();
                 this.closeCarourse();
-                if(!body || !body.data || body.data.length==0){
+            },
+            cleanLoopHearMap:function(){
+                if(this.loopHeatMap){
+                    clearInterval(this.loopHeatMap);
+                    this.loopHeatMap = undefined;
+                }
+                removeHotMap();
+            },
+            carourselData:function(body){
+                this.cleanMapData();
+                if(!body){
                     return;
                 }
+                if(body.length){
+                    body.forEach(item=>{
+                        let cfgs = item.style;
+                        if(typeof(cfgs)=='string'){
+                            cfgs = JSON.parse(item.style);
+                        }
+                        let datas = item.data;
+                        datas.forEach(data=>{
+                            let coords = eval(data.COORDS);
+                            cfgs['lng']=coords[0];
+                            cfgs['lat']=coords[1];
+                            cfgs['text']=data.ADDRESS;
+                            addMarksV2(cfgs);
+                        });
+                    });
+                    return;
+                }
+                if(!body.data || body.data.length==0){
+                    return;
+                }
+
                 let bodyData = body.data;
                 let group=[];
                 for(let p in bodyData){
@@ -1260,7 +1575,10 @@
                     let data = bodyData[el]||[];
                     data.forEach(item=>{
                         let itemData = item.data;
-                        let cfgs = JSON.parse(item.style);
+                        let cfgs = item.style;
+                        if(typeof(item.style)=='string'){
+                            cfgs = JSON.parse(item.style);
+                        }
                         itemData.forEach(sItem=>{
                             let coords = eval(sItem.COORDS);
                             cfgs['lng']=coords[0];
@@ -1293,23 +1611,9 @@
                 })
             },
             iconChangeData:function(index){
-                debugger;
                 let item = this.iconList[index];
                 this.formMarks.iconName = item.iconName;
                 this.formMarks.iconType = item.iconType;
-            },
-            changeCarouselColTypeRadio:function(val){
-                if(val=='0'){
-                    this.formMarks.carouselCol='';
-                }
-            },
-            changeIconRadio:function(val){
-                debugger;
-                if(val == '1'){
-                    if(this.iconList.length==0){
-                        this.loadIconData('POST',configpre.map_getGisIcon);
-                    }
-                }
             },
             loadIconData:function(method,api,data){
                 let me = this;
@@ -1321,16 +1625,274 @@
                 });
             },
             doSaveCoordData:function(){
-                debugger;
-//                console.info(this.formTest);
                 let me = this;
                 let jsonDataList = this.rquestParams('POST',configpre.api_rootPath+'map/testAddCoords.html',this.formTest);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200'){
                         me.myMessage('保存成功','success');
-//                        me.formTest.colVals=[];
                     }
                 });
+            },
+            choiceModelClick:function(){
+                if(this.choiceModelData==''){
+                    this.myMessage('请选择数据模型','warnning');
+                    return;
+                }
+                this.modelDataChoice = !this.modelDataChoice;
+            },
+            loadModel:function(method,api,data){
+                const me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.models =json.body || [];
+                        me.totalCount = json.totalCount;
+                    }
+                });
+            },
+            handleCurrentChange(val) {
+                this.loadModel('POST',configpre.api_loadModels,{pageSize: this.pageSize, pageNo: val || 1});
+            },
+            dealModelData: function (flag, item, event, pageNo) {
+                this.choiceModelData = item;
+                if (event) {
+                    var el = event.currentTarget;
+                    $('#datamodeltable tr').removeClass('row_background');
+                    $(el).addClass('row_background');
+                }
+                this.choiceModelName = '已选中模型:'+item.CN_NAME;
+                let data = {
+                    tableName:item.EN_NAME
+                }
+                this.loadModelRelationData('POST',configpre.map_loadModelRelation,data);
+            },
+
+            handleSelectionChange:function(rows){
+                this.colDatas = [];
+                rows.forEach(row=>{
+                    this.colDatas.push(row.REGION);
+                });
+            },
+            handleFloatSelectionChange:function(rows){
+                this.saveFloatData = rows;
+            },
+            changeRegion:function(colName){
+                if(!this.modelRadio || this.modelRadio=='' || !this.modelRadioEnName || this.modelRadioEnName==''){
+                    this.myMessage('请选择数据模型','warnning');
+                    return;
+                }
+                let data = {
+                    modelId:this.modelRadio,
+                    tableName:this.modelRadioEnName,
+                    colName:colName
+                };
+                this.loadTableDataGroupByCol('POST',configpre.map_loadTableDataGroupByCol,data);
+                delete data.colName;
+                data['mapType'] = this.formMarks.dataType;
+                this.loadModelStyle('POST',configpre.map_loadModelStyle,data);
+            },
+            changeCoordCol:function(colName){
+                if(!this.modelRadio || this.modelRadio=='' || !this.modelRadioEnName || this.modelRadioEnName==''){
+                    this.myMessage('请选择数据模型','warnning');
+                    return;
+                }
+                if(this.formMarks.dataType=='3'){
+                    let data = {
+                        modelId:this.modelRadio,
+                        tableName:this.modelRadioEnName,
+                        coords:colName
+                    };
+                    this.loadFloatData('POST',configpre.map_loadModelDataFloat,data);
+                }
+            },
+            loadTableDataGroupByCol:function(method,api,data){
+                const me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        if(json.body){
+                            me.tableDatas = json.body||[];
+                        }else{
+                            this.myMessage('无数据','success');
+                        }
+                    }else{
+                        this.myMessage('系统异常，请联系管理员','error');
+                    }
+                });
+            },
+            loadModelStyle:function(method,api,data){
+                const me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200' && json.body){
+                        if(json.body){
+                            me.styleDatas = json.body||'';
+                        }
+                    }
+                });
+            },
+
+            openSetStyleDialg:function(opt,row){
+                let style;
+                if(opt=='single'){
+                    this.colDatas = [];
+                    if(this.styleDatas!=''){
+                        this.colDatas.push(row.REGION);
+                        let key = this.formMarks.addressCol+'-'+row.REGION;
+                        style = this.styleDatas[key];
+                        if(typeof(style) == 'string'){
+                            style = JSON.parse(style);
+                        }
+                    }
+                }else{
+                    if(this.colDatas.length==0){
+                        this.myMessage('请勾选数据','warning');
+                        return;
+                    }
+                }
+                this.initStyle(style);
+                this.loadIconData('POST',configpre.map_getGisIcon);
+                this.innerVisible = true;
+            },
+            saveStyleData:function(){
+                let params=[];
+                this.colDatas.forEach(colData=>{
+                    let cfgs = {
+                        modelId:this.modelRadio,
+                        tableName:this.modelRadioEnName,
+                        colName:this.formMarks.addressCol,
+                        colData:colData,
+                        mapType:this.formMarks.dataType,
+                        status:'1'
+                    };
+                    let style ={
+                        styleType:this.formMarks.styleType,
+                        status:this.formMarks.status,
+                        iconStatus:this.formMarks.iconStatus,
+                        opacity:this.formMarks.opacity,
+                        iconData:this.formMarks.iconData,
+                        iconName:this.formMarks.iconName,
+                        iconType:this.formMarks.iconType,
+                        radius:this.formMarks.radius,
+                        imageColor:this.formMarks.imageColor,
+                        textAlign:this.formMarks.textAlign,
+                        textBaseline:this.formMarks.textBaseline,
+                        font:this.formMarks.font,
+                        text:colData,
+                        textFillColor:this.formMarks.textFillColor,
+                        textStrokeColor:this.formMarks.textStrokeColor,
+                        textStrokeWidth:this.formMarks.textStrokeWidth
+                    };
+                    cfgs['styleData'] = style;
+                    params.push(cfgs);
+                });
+
+                if(params.length>0){
+                    const me = this;
+                    let jsonDataList = this.rquestParams('POST',configpre.map_saveModelStyle,{data:params});
+                    ajaxrequestasync(jsonDataList,function(code,msg,json){
+                        if(code=='200'){
+                            me.innerVisible = false;
+                            params.forEach(item=>{
+                                let key = me.formMarks.addressCol+'-'+item.colData;
+                                me.styleDatas[key] = item.styleData;
+                            });
+                            me.initStyle();
+                            me.myMessage('保存成功','success');
+                        }else{
+                            me.myMessage('系统异常，请联系管理员','error');
+                        }
+                    });
+                }
+            },
+            initStyle:function(style){
+                if(style){
+                   for(let p in style){
+                       this.formMarks[p] = style[p];
+                   }
+                }else{
+                    this.formMarks.styleType=0;
+                    this.formMarks.status='1';
+                    this.formMarks.iconStatus=0;
+                    this.formMarks.opacity=0.7;
+                    this.formMarks.iconData='';
+                    this.formMarks.iconName='';
+                    this.formMarks.iconType='';
+                    this.formMarks.radius=4;
+                    this.formMarks.imageColor='#3392F4';
+                    this.formMarks.textAlign='center';
+                    this.formMarks.textBaseline='middle';
+                    this.formMarks.font='normal 14px 微软雅黑';
+                    this.formMarks.text='';
+                    this.formMarks.textFillColor='#FDF9FE';
+                    this.formMarks.textStrokeColor='#ffcc33';
+                    this.formMarks.textStrokeWidth=2;
+                }
+            },
+            openSetFloatDialog:function(){
+                this.saveFloatData=[];
+                if(this.formMarks.coordCol==''){
+                    this.myMessage('请绑定地理位置','warning');
+                }else{
+                    this.innerFloatVisible = true;
+                }
+
+            },
+            loadFloatData:function(method,api,data){
+                const me = this;
+                let jsonDataList = this.rquestParams(method,api,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        debugger;
+                        me.floatData = json.body||[];
+                        let allCols = me.dimensionColList.concat(me.metricColList);
+                        let newFloatData = [];
+                        allCols.forEach(item=>{
+                            let cfg = {
+                                colName:item.COLUMN_NAME,
+                                COLUMN_RENAME:item.COLUMN_RENAME,
+                                dataLable:'',
+                                groupBy:'0',
+                            };
+                            me.floatData.forEach(el=>{
+                                if(el.COL_NAME==item.COLUMN_NAME){
+                                    cfg.dataLable = el.DATA_LABLE;
+                                    cfg.groupBy = el.GROUP_BY;
+                                    cfg['orderNum'] = el.ORDER_NUM;
+                                }
+                            });
+                            newFloatData.push(cfg);
+                        });
+                        me.floatData = newFloatData;
+
+                    }else{
+                        me.myMessage('加载悬浮框数据异常','error');
+                    }
+                });
+            },
+            doSaveModelDataFloat:function(){
+                if(this.saveFloatData.length>0){
+                    let cfgs = {
+                        modelId:this.modelRadio,
+                        tableName:this.modelRadioEnName,
+                        coords:this.formMarks.coordCol,
+                        status:'1',
+                        data:this.saveFloatData
+                    }
+                    const me = this;
+                    let jsonDataList = this.rquestParams('POST',configpre.map_saveModelDataFloat,cfgs);
+                    ajaxrequestasync(jsonDataList,function(code,msg,json){
+                        if(code=='200'){
+                            me.innerFloatVisible = false;
+                            me.myMessage('保存成功','success');
+                        }else{
+                            me.myMessage('系统异常，请联系管理员','error');
+                        }
+                    });
+                }else{
+                    this.myMessage('请勾选数据','success');
+                }
+
             }
         }
     });

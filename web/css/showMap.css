@@ -28,7 +28,7 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
 .caroule_marks_right{
     position:absolute;
     z-index:11;
-    width:200px;
+    width:300px;
     right: 5px;
     bottom: 405px;
     text-align: left;
@@ -62,4 +62,17 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
     line-height: 30px;
     height: 30px;
     color: #d83504;
+}
+.row_background{
+    background: #f0f9eb;
+}
+.show_table_button{
+    text-align:left;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+.collapse-title{
+    margin-left:10px;
+    font-size:15px;
+    font-weight: bold;
 }
