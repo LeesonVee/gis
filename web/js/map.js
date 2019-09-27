@@ -137,14 +137,20 @@ function initMap(cfgs){
     this.addMarksLayer();
     layers.push(this.marksLayer);
     var center = [parseFloat(jsonAreaCode.center[0]),parseFloat(jsonAreaCode.center[1])];
+    var viewCfg = {};
+    viewCfg['projection'] = jsonAreaCode.projection;
+    viewCfg['center'] = center;
+    viewCfg['zoom'] = jsonAreaCode.zoom;
+    if(jsonAreaCode.maxZoom){
+        viewCfg['maxZoom'] = jsonAreaCode.maxZoom;
+    }
+    if(jsonAreaCode.minZoom){
+        viewCfg['minZoom'] = jsonAreaCode.minZoom;
+    }
     var map = new ol.Map({
         target: jsonAreaCode.target,
         layers: layers,
-        view: new ol.View({
-            projection: jsonAreaCode.projection,
-            center: center,
-            zoom: jsonAreaCode.zoom
-        })
+        view: new ol.View(viewCfg)
     });
     this.setMyStyle(map,jsonAreaCode);
     this.addEvent(jsonAreaCode,map);
@@ -165,12 +171,8 @@ function addEvent(jsonAreaCode,map){
                 me.singleClick(evt);
             });
         }else if(element=='pointermove'){
-            var converLayer = this.converLayer;
-            var featureOverlay = this.featureOverlay(map);
-            //地图绑定鼠标滑过事件
-            map.on(element, function (evt) {
-                me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
-            });
+            // pointermoveMap(element,map);
+            pointerMoveSetXY(element,map);
         }else if(element=='moveend'){
             var addPointStatus = false;
             var params = {
@@ -204,6 +206,7 @@ function addEvent(jsonAreaCode,map){
             });
         }
     });
+
     // var addPointStatus = false;
     // var converLayer = this.converLayer;
     // var featureOverlay = (eventName=='pointermove')?this.featureOverlay(map):'';
@@ -233,6 +236,41 @@ function addEvent(jsonAreaCode,map){
     //         }
     //     }
     // });
+}
+function pointermoveMap(element,map){
+    var converLayer = this.converLayer;
+    var featureOverlay = this.featureOverlay(map);
+    //地图绑定鼠标滑过事件
+    map.on(element, function (evt) {
+        me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
+    });
+}
+function pointerMoveSetXY(element,map){
+    map.on(element, function (evt) {
+        var point = evt.pixel;
+        if(mapVue){
+            var coordinate;
+            var coordinateData = mapVue.allFloatDialogData;
+            for(var p in coordinateData){
+                var arry = JSON.parse(p);
+                console.info((evt.coordinate[0]-arry[0])*1000);
+                console.info((evt.coordinate[1]-arry[1])*1000);
+                if(Math.abs(evt.coordinate[0]-arry[0])*1000<2 && Math.abs(evt.coordinate[1]-arry[1])*1000<1){
+                    coordinate=p;
+                }
+            }
+            if(coordinateData && coordinateData!='' && coordinateData[coordinate]){
+                // console.info(coordinate);
+                mapVue.floatDialogLeft=point[0]+5;
+                mapVue.floatDialogTop=point[1]+5;
+                mapVue.floatDialogData = coordinateData[coordinate];
+                mapVue.floatDialog = true;
+            }else{
+                mapVue.floatDialog = false;
+            }
+
+        }
+    });
 }
 function singleClick(evt){
     debugger;
@@ -585,16 +623,13 @@ function addHotMap(features){
 }
 
 function removeHotMap() {
-    if(this.hotVector){
-        this.map.removeLayer(this.hotVector);
-        this.hotVector=undefined;
+    if(this.loopHotVector){
+        this.map.removeLayer(this.loopHotVector);
     }
 }
 
 function showHotMap(heatData){
-    if(this.loopHotVector){
-        this.map.removeLayer(this.loopHotVector);
-    }
+    removeHotMap();
     //矢量图层 获取geojson数据
     var vectorSource = new ol.source.Vector({
         features: (new ol.format.GeoJSON()).readFeatures(heatData,{
