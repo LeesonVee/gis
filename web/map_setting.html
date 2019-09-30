@@ -67,8 +67,8 @@
 <div id="app">
     <div v-if="floatDialog" id="floatDialog" class="float_dialog" :style="{top:floatDialogTop+'px',left:floatDialogLeft+'px'}">
         <div v-for="item in floatDialogData">
-            <el-col :span="8" style="text-align: right;">{{item.name}}:</el-col>
-            <el-col :span="16">{{item.val}}</el-col>
+            <el-col :span="8" style="text-align: right;">{{item.name!=null?item.name:'无'}}:</el-col>
+            <el-col :span="16">{{item.val!=null?item.val:'无'}}</el-col>
         </div>
     </div>
     <el-container>
@@ -315,9 +315,12 @@
                             <el-tab-pane label="数据采集" name="addData">
                                 <div style="margin-top: 15px;">
                                     <el-row>
-                                        <el-col :span="5">&nbsp;</el-col>
-                                        <el-col :span="18" style="text-align: left;">
-                                            <el-button type="primary" @click="doSaveCoordData">保存</el-button>
+                                        <el-col :span="2">&nbsp;</el-col>
+                                        <el-col :span="21" style="text-align: left;">
+                                            <el-button type="primary" @click="doSaveCoordData" size="mini">保存</el-button>
+                                            <el-button type="primary" @click="doAddNewCol" size="mini">新增字段</el-button>
+                                            <el-button type="primary" @click="initFormTest" size="mini">重置</el-button>
+                                            <el-button type="primary" @click="initCoordData" size="mini">重置数据</el-button>
                                         </el-col>
                                         <el-col :span="1">&nbsp;</el-col>
                                     </el-row>
@@ -341,18 +344,26 @@
                                 <el-row style="margin-top: 15px;">
                                     <el-col :span="1">&nbsp;</el-col>
                                     <el-col :span="4">轮播字段</el-col>
-                                    <el-col :span="18">
+                                    <el-col :span="7">
                                         <el-input size="small" v-model="formTest.carouselCol" placeholder="请输入内容"></el-input>
                                     </el-col>
-                                    <el-col :span="1">&nbsp;</el-col>
-                                </el-row>
-                                <el-row style="margin-top: 15px;">
-                                    <el-col :span="1">&nbsp;</el-col>
-                                    <el-col :span="4">轮播值</el-col>
-                                    <el-col :span="18">
+                                    <el-col :span="4">-轮播值</el-col>
+                                    <el-col :span="7">
                                         <el-input size="small" v-model="formTest.carouselVal" placeholder="请输入内容"></el-input>
                                     </el-col>
                                     <el-col :span="1">&nbsp;</el-col>
+                                </el-row>
+                                <el-row v-for="(item,index) in formTest.columns">
+                                    <el-col :span="1">&nbsp;</el-col>
+                                    <el-col :span="4">字段{{index}}</el-col>
+                                    <el-col :span="7">
+                                        <el-input size="small" v-model="item.colName" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="4">-字段{{index}}值</el-col>
+                                    <el-col :span="7">
+                                        <el-input size="small" v-model="item.colVal" placeholder="请输入内容"></el-input>
+                                    </el-col>
+                                    <el-col :span="1"><div class="el-icon-delete" @click="delColumn(index)"></div></el-col>
                                 </el-row>
                                 <el-row style="margin-top: 15px;">
                                     <el-col :span="1">&nbsp;</el-col>
@@ -445,8 +456,8 @@
                 <el-button type="primary" @click="saveStyleData">保 存</el-button>
             </div>
         </el-dialog>
-        <el-dialog width="30%" title="悬浮框设定" :visible.sync="innerFloatVisible" append-to-body>
-            <el-table ref="multipleTable1" :data="floatData" @selection-change="handleFloatSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
+        <el-dialog width="30%" title="悬浮框设定" :visible.sync="innerFloatVisible" append-to-body :before-close="beforeCloseModelDataFloat">
+            <el-table ref="multipleFloatTable" :data="floatData" @selection-change="handleFloatSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
                 <el-table-column type="selection" width="35"></el-table-column>
                 <el-table-column label="字段">
                     <template slot-scope="scope">{{ scope.row.COLUMN_RENAME }}</template>
@@ -470,7 +481,7 @@
                 </el-table-column>
             </el-table>
             <div slot="footer" class="dialog-footer">
-                <el-button @click="innerFloatVisible = false">取 消</el-button>
+                <el-button @click="doCancle4ModelDataFloat">取 消</el-button>
                 <el-button type="primary" @click="doSaveModelDataFloat">保 存</el-button>
             </div>
         </el-dialog>
@@ -502,7 +513,7 @@
                                 <el-radio :label="1">是</el-radio>
                             </el-radio-group>
                         </el-form-item>
-                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="(formMarks.dataType=='1' || formMarks.dataType=='2') && formMarks.carouselColType=='1'">
                             <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
                                 <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
@@ -541,7 +552,7 @@
                             </el-table-column>
                             <el-table-column label="操作">
                                 <template slot-scope="scope">
-                                    <el-button size="mini" @click="openSetStyleDialg('single',scope.row)">样式设定</el-button>
+                                    <el-button size="mini" @click="openSetStyleDialg('single',scope.row)">{{scope.row.STYLE_BUTTON}}</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -816,7 +827,8 @@
                 valCol:'',
                 valRange1:'',
                 valRange2:'',
-                colVals:[]
+                colVals:[],
+                columns:[]
             },
 
 
@@ -874,7 +886,6 @@
                         }
                         if(type=='create'){
                             initMap(cfgs);
-                            debugger;
                             this.loadDataByEvents(cfgs.events);
                             this.showMap = true;
                         }else if(type='save'){
@@ -1330,7 +1341,6 @@
                         TABLE_NAME: row.TABLE_NAME
                     };
                     this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params,row.RELATION_DIM_COOR);
-//                    this.modelRadio = row.MODEL_ID;
                     this.formMarks.name=row.MODEL_RELATION_NAME;
                     this.formMarks.addressCol=row.RELATION_DIM_ADDRESS;
                     this.formMarks.coordCol=row.RELATION_DIM_COOR;
@@ -1394,7 +1404,6 @@
 //                    this.myMessage('请先创建地图','warning');
 //                    return;
 //                }
-                debugger;
                 let params = {modelRelation:[row]};
 
                 let modelStyleData = row.MODEL_STYLE_DATA;
@@ -1409,7 +1418,9 @@
                     apiPath = configpre.map_queryHeatMapDataByGisModelRelation;
                 }
                 this.loadTableData('POST',apiPath,params,type);
-                this.loadDialogDataByRelation(row);
+                if(type=='3'){
+                    this.loadDialogDataByRelation(row);
+                }
             },
             loadDialogDataByRelation:function(row){
                 let data = {
@@ -1491,7 +1502,6 @@
                                 cfgs['lng']=coords[0];
                                 cfgs['lat']=coords[1];
                                 cfgs['text']=data.ADDRESS;
-
                                 addMarksV2(cfgs);
                             });
                         });
@@ -1541,18 +1551,21 @@
                 if(!body){
                     return;
                 }
+                this.allFloatDialogData=[];
                 if(body.length){
                     body.forEach(item=>{
-                        let cfgs = item.style;
-                        if(typeof(cfgs)=='string'){
-                            cfgs = JSON.parse(item.style);
-                        }
+                        let cfgs;
                         let datas = item.data;
                         datas.forEach(data=>{
+                            cfgs = data.style;
+                            if(typeof(cfgs)=='string'){
+                                cfgs = JSON.parse(cfgs);
+                            }
+                            cfgs.radius=data.VAL;
+                            cfgs.text=data.VAL;
                             let coords = eval(data.COORDS);
                             cfgs['lng']=coords[0];
                             cfgs['lat']=coords[1];
-                            cfgs['text']=data.ADDRESS;
                             addMarksV2(cfgs);
                         });
                     });
@@ -1575,11 +1588,12 @@
                     let data = bodyData[el]||[];
                     data.forEach(item=>{
                         let itemData = item.data;
-                        let cfgs = item.style;
-                        if(typeof(item.style)=='string'){
-                            cfgs = JSON.parse(item.style);
-                        }
+                        let cfgs = {};
                         itemData.forEach(sItem=>{
+                            cfgs = sItem.style;
+                            if(typeof(sItem.style)=='string'){
+                                cfgs = JSON.parse(cfgs);
+                            }
                             let coords = eval(sItem.COORDS);
                             cfgs['lng']=coords[0];
                             cfgs['lat']=coords[1];
@@ -1594,6 +1608,24 @@
                     }else{
                         i++
                     }
+                }
+            },
+            //根据最大值和当前值，转换成点的大小值
+            radiusByMaxVal(val,maxVal){
+                let radius = 4;
+                let coefficient = this.getCoefficients(10,maxVal,10);
+                if(maxVal/coefficient>20){
+
+                }
+                return radius;
+            },
+            //根据最大值和默认系数，求符合算法的系数
+            getCoefficients:function(defalutCoefficient,maxVal,result){
+                if(maxVal/defalutCoefficient>defalutCoefficient){
+                    result*=defalutCoefficient;
+                    this.getCoefficients();
+                }else{
+                    return result;
                 }
             },
             closeCarourse:function(){
@@ -1633,6 +1665,28 @@
                     }
                 });
             },
+            doAddNewCol:function(){
+                this.formTest.columns.push({colName:'',colVal:''});
+            },
+            initCoordData:function(){
+                this.formTest.colVals=[];
+                this.formTest.valRange1='';
+                this.formTest.valRange2='';
+                this.formTest.carouselVal='';
+            },
+            initFormTest:function(){
+                this.formTest.tableName='';
+                this.formTest.coordsCol='';
+                this.formTest.carouselVal='';
+                this.formTest.valCol='';
+                this.formTest.valRange1='';
+                this.formTest.valRange2='';
+                this.formTest.colVals=[];
+                this.formTest.columns=[];
+            },
+            delColumn:function(index){
+                this.formTest.columns.splice(index,1)
+            },
             choiceModelClick:function(){
                 if(this.choiceModelData==''){
                     this.myMessage('请选择数据模型','warnning');
@@ -1668,10 +1722,7 @@
             },
 
             handleSelectionChange:function(rows){
-                this.colDatas = [];
-                rows.forEach(row=>{
-                    this.colDatas.push(row.REGION);
-                });
+                this.colDatas = rows;
             },
             handleFloatSelectionChange:function(rows){
                 this.saveFloatData = rows;
@@ -1689,7 +1740,6 @@
                 this.loadTableDataGroupByCol('POST',configpre.map_loadTableDataGroupByCol,data);
                 delete data.colName;
                 data['mapType'] = this.formMarks.dataType;
-                this.loadModelStyle('POST',configpre.map_loadModelStyle,data);
             },
             changeCoordCol:function(colName){
                 if(!this.modelRadio || this.modelRadio=='' || !this.modelRadioEnName || this.modelRadioEnName==''){
@@ -1712,11 +1762,12 @@
                     if(code=='200' && json.body){
                         if(json.body){
                             me.tableDatas = json.body||[];
+                            me.loadModelStyle('POST',configpre.map_loadModelStyle,data);
                         }else{
-                            this.myMessage('无数据','success');
+                            me.myMessage('无数据','success');
                         }
                     }else{
-                        this.myMessage('系统异常，请联系管理员','error');
+                        me.myMessage('系统异常，请联系管理员','error');
                     }
                 });
             },
@@ -1727,9 +1778,29 @@
                     if(code=='200' && json.body){
                         if(json.body){
                             me.styleDatas = json.body||'';
+                            let len = me.tableDatas.length;
+                            if(me.styleDatas!='' && len>0){
+                                for(let i=0;i<len;i++){
+                                    let key = me.formMarks.addressCol+'-'+me.tableDatas[i].REGION;
+                                    if(me.styleDatas[key]){
+                                        me.tableDatas[i].STYLE_BUTTON='已设定';
+                                    }
+                                }
+                            }
                         }
                     }
                 });
+            },
+
+            checkStyle:function(row){
+                let status=false;
+                if(this.styleDatas!=''){
+                    let key = this.formMarks.addressCol+'-'+row.REGION;
+                    if(this.styleDatas[key]){
+                        status = true;
+                    }
+                }
+                return status;
             },
 
             openSetStyleDialg:function(opt,row){
@@ -1737,11 +1808,13 @@
                 if(opt=='single'){
                     this.colDatas = [];
                     if(this.styleDatas!=''){
-                        this.colDatas.push(row.REGION);
+                        this.colDatas.push(row);
                         let key = this.formMarks.addressCol+'-'+row.REGION;
                         style = this.styleDatas[key];
                         if(typeof(style) == 'string'){
                             style = JSON.parse(style);
+                            style['carouselColType'] = this.formMarks.carouselColType;
+                            style['displayNameStatus'] = this.formMarks.displayNameStatus;
                         }
                     }
                 }else{
@@ -1756,16 +1829,18 @@
             },
             saveStyleData:function(){
                 let params=[];
-                this.colDatas.forEach(colData=>{
+                this.colDatas.forEach(item=>{
                     let cfgs = {
                         modelId:this.modelRadio,
                         tableName:this.modelRadioEnName,
                         colName:this.formMarks.addressCol,
-                        colData:colData,
+                        colData:item.REGION,
                         mapType:this.formMarks.dataType,
                         status:'1'
                     };
                     let style ={
+                        carouselColType:this.formMarks.carouselColType,
+                        displayNameStatus:this.formMarks.displayNameStatus,
                         styleType:this.formMarks.styleType,
                         status:this.formMarks.status,
                         iconStatus:this.formMarks.iconStatus,
@@ -1778,7 +1853,7 @@
                         textAlign:this.formMarks.textAlign,
                         textBaseline:this.formMarks.textBaseline,
                         font:this.formMarks.font,
-                        text:colData,
+                        text:item.REGION,
                         textFillColor:this.formMarks.textFillColor,
                         textStrokeColor:this.formMarks.textStrokeColor,
                         textStrokeWidth:this.formMarks.textStrokeWidth
@@ -1797,6 +1872,17 @@
                                 let key = me.formMarks.addressCol+'-'+item.colData;
                                 me.styleDatas[key] = item.styleData;
                             });
+                            let len = me.tableDatas.length;
+                            if(me.styleDatas!='' && len>0){
+                                for(let i=0;i<len;i++){
+                                    let key = me.formMarks.addressCol+'-'+me.tableDatas[i].REGION;
+                                    if(me.styleDatas[key]){
+                                        me.tableDatas[i].STYLE_BUTTON='已设定';
+                                    }else{
+                                        me.tableDatas[i].STYLE_BUTTON='样式设定';
+                                    }
+                                }
+                            }
                             me.initStyle();
                             me.myMessage('保存成功','success');
                         }else{
@@ -1807,10 +1893,14 @@
             },
             initStyle:function(style){
                 if(style){
-                   for(let p in style){
-                       this.formMarks[p] = style[p];
-                   }
+                    for(let p in style){
+                       if(p!='carouselColType' || p!='displayNameStatus'){
+                           this.formMarks[p] = style[p];
+                       }
+                    }
                 }else{
+                    //this.formMarks.carouselColType=0;
+                    //this.formMarks.displayNameStatus=0;
                     this.formMarks.styleType=0;
                     this.formMarks.status='1';
                     this.formMarks.iconStatus=0;
@@ -1843,7 +1933,6 @@
                 let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
                     if(code=='200'){
-                        debugger;
                         me.floatData = json.body||[];
                         let allCols = me.dimensionColList.concat(me.metricColList);
                         let newFloatData = [];
@@ -1851,7 +1940,7 @@
                             let cfg = {
                                 colName:item.COLUMN_NAME,
                                 COLUMN_RENAME:item.COLUMN_RENAME,
-                                dataLable:'',
+                                dataLable:item.COLUMN_RENAME,
                                 groupBy:'0',
                             };
                             me.floatData.forEach(el=>{
@@ -1883,16 +1972,27 @@
                     let jsonDataList = this.rquestParams('POST',configpre.map_saveModelDataFloat,cfgs);
                     ajaxrequestasync(jsonDataList,function(code,msg,json){
                         if(code=='200'){
-                            me.innerFloatVisible = false;
+                            me.cleanFloatTableSelection();
                             me.myMessage('保存成功','success');
                         }else{
                             me.myMessage('系统异常，请联系管理员','error');
                         }
                     });
                 }else{
-                    this.myMessage('请勾选数据','success');
+                    this.myMessage('请勾选数据','warning');
                 }
 
+            },
+            doCancle4ModelDataFloat:function(){
+                this.cleanFloatTableSelection();
+            },
+            beforeCloseModelDataFloat:function(done){
+                this.cleanFloatTableSelection();
+                done();
+            },
+            cleanFloatTableSelection:function(){
+                this.$refs.multipleFloatTable.clearSelection();
+                this.innerFloatVisible = false;
             }
         }
     });

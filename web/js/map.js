@@ -255,12 +255,11 @@ function pointerMoveSetXY(element,map){
                 var arry = JSON.parse(p);
                 console.info((evt.coordinate[0]-arry[0])*1000);
                 console.info((evt.coordinate[1]-arry[1])*1000);
-                if(Math.abs(evt.coordinate[0]-arry[0])*1000<2 && Math.abs(evt.coordinate[1]-arry[1])*1000<1){
+                if(Math.abs(evt.coordinate[0]-arry[0])*10000<9 && Math.abs(evt.coordinate[1]-arry[1])*10000<9){
                     coordinate=p;
                 }
             }
             if(coordinateData && coordinateData!='' && coordinateData[coordinate]){
-                // console.info(coordinate);
                 mapVue.floatDialogLeft=point[0]+5;
                 mapVue.floatDialogTop=point[1]+5;
                 mapVue.floatDialogData = coordinateData[coordinate];
@@ -500,7 +499,7 @@ function initText(cfgs){
         //字体样式
         font: cfgs.font||'normal 14px 微软雅黑',
         //文本内容
-        text: cfgs.displayNameStatus?cfgs.text||'':'',
+        text: (cfgs.displayNameStatus?cfgs.text||'':'')+'',
         //填充样式
         fill: initFill(cfgs),
     });
