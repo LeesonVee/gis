@@ -16,10 +16,12 @@
     <!-- 引入组件库 -->
     <script type="text/javascript" src="../js/vue.min.js"></script>
     <script src="../js/element.js"></script>
+    <script src="../js/component.js"></script>
     <link rel="stylesheet" href="../css/showMap.css">
 </head>
 <body>
 <div id="app" class="fullScreen" ref="clientScreen">
+    <float-component v-if="floatDialog" :data="floatCompData.items.table" :suffix="floatCompData.suffix" id="floatDialog" class="float_dialog" :style="{top:floatCompData.top+'px',left:floatCompData.left+'px'}"></float-component>
     <div id="title" class="title_center">{{title}}</div>
     <div id="map" class="fullScreen" ref="mymap"></div>
     <div class="show_right" title="显示设置" @click="drawer = true"><i class="el-icon-info"></i></div>
@@ -134,7 +136,7 @@
     </div>
 </div>
 <script type="text/javascript">
-var gisVue=  new Vue({
+var mapVue=  new Vue({
         el: '#app',
         data:{
             clientScreenWidth:0,
@@ -170,11 +172,24 @@ var gisVue=  new Vue({
             totalCount: 0,
             prevText: '上一页',
             nextText: '下一页',
+            floatDialog:false,
+//            floatDialogTop:0,
+//            floatDialogLeft:0,
+            floatCompData:{
+                suffix:true,
+                top:0,
+                left:0,
+                items:{
+                    table:[]
+                }
+            },
+//            floatDialogData:[],
+            allFloatDialogData:''
         },
         mounted(){
             this.loadGisData('POST',configpre.map_getMapByPkey,{ID:"7f32a61e89344a1bb798"});
             this.getHeight();
-            this.loadModel('POST',configpre.api_loadModels,{pageSize: this.pageSize, pageNo: 1});
+            this.loadModel('POST',configpre.api_loadGisModels,{pageSize: this.pageSize, pageNo: 1});
         },
         methods:{
             getHeight:function(){
@@ -335,16 +350,16 @@ var gisVue=  new Vue({
                     group.push(p);
                 }
                 let i=0;
-                this.timer = setInterval(carourselFn,2000);
+                this.timer = setInterval(carourselFn,1000);
                 function carourselFn(){
                     cleanMarks(true);
-                    gisVue.carouselNames=[];
+                    mapVue.carouselNames=[];
                     let el = group[i];
                     carouselNames.forEach(item=>{
                         let cfgs = {
                             carouselName:el+item
                         }
-                        gisVue.carouselNames.push(cfgs);
+                        mapVue.carouselNames.push(cfgs);
                     });
                     let data = bodyData[el]||[];
                     data.forEach(item=>{
@@ -378,12 +393,12 @@ var gisVue=  new Vue({
                 }
                 if(style.carouselColType && style.carouselColType=='1'){
                     let dataIndex=0;
-                    this.loopHeatMap = setInterval(loopShowHotMapFn,2000);
+                    this.loopHeatMap = setInterval(loopShowHotMapFn,1000);
                     function loopShowHotMapFn(){
                         let heatDatas = body.heatData;
                         showHotMap(heatDatas[dataIndex]);
-                        gisVue.carouselNames=[];
-                        gisVue.carouselNames.push({carouselName:heatDatas[dataIndex].text+heatDatas[dataIndex].carouselCol});
+                        mapVue.carouselNames=[];
+                        mapVue.carouselNames.push({carouselName:heatDatas[dataIndex].text+heatDatas[dataIndex].carouselCol});
                         dataIndex++;
                         if(dataIndex==heatDatas.length){
                             dataIndex=0;
@@ -459,6 +474,7 @@ var gisVue=  new Vue({
             showClick:function(type){
                 let params = {modelRelation:[]};
                 let apiPath = configpre.map_queryTableDataByGisModelRelationV2;
+                this.allFloatDialogData=[];
                 switch (type){
                     case '1':
                         params.modelRelation = this.multipleMarksSelection;
@@ -469,12 +485,27 @@ var gisVue=  new Vue({
                         break;
                     case '3':
                         params.modelRelation = this.multipleLableSelection;
+                        this.loadDialogDataByRelation(this.multipleLableSelection[0]);
                         break;
                 }
                 if(this.checkCarousel(params.modelRelation)){
                     params['isCarousel'] = true;
                 }
                 this.loadTableData('POST',apiPath,params,type);
+            },
+            loadDialogDataByRelation:function(row){
+                let data = {
+                    DATA_MODEL_ID:row.MODEL_ID,
+                    TABLE_NAME:row.TABLE_NAME,
+                    COORDS:row.RELATION_DIM_COOR
+                }
+                const me = this;
+                let jsonDataList = this.rquestParams('POST',configpre.map_loadFloatDialogByRelation,data);
+                ajaxrequestasync(jsonDataList,function(code,msg,json){
+                    if(code=='200'){
+                        me.allFloatDialogData = json.body ||'';
+                    }
+                });
             },
             checkCarousel:function(modelRelations){
                 debugger;

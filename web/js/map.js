@@ -174,68 +174,22 @@ function addEvent(jsonAreaCode,map){
             // pointermoveMap(element,map);
             pointerMoveSetXY(element,map);
         }else if(element=='moveend'){
-            var addPointStatus = false;
-            var params = {
-                areaCode:jsonAreaCode.areaCode
-            };
-            var jsonDataList ={
-                httpMethod:'POST',
-                url:configpre.map_getOrganInfoByAreaCode,
-                data:JSON.stringify(params)
-            }
-            ajaxrequestasync(jsonDataList,function(code,msg,json){
-                if(code=='200'){
-                    map.on(element,function(e){
-                        var zoom = map.getView().getZoom();  //获取当前地图的缩放级别
-                        if(zoom >= 13){
-                            if(!addPointStatus){
-                                console.log('添加点标记');
-                                json.body.forEach(item=>{
-                                    me.addPoint(item.LNG,item.LAT,item.MARK_NAME);
-                                });
-                                addPointStatus = true;
-                            }
-                        }else{
-                            if(addPointStatus){
-                                me.layer.getSource().clear();   //控制地图图层不可见
-                                addPointStatus = false;
-                            }
-                        }
-                    });
+            map.on(element, function (evt) {
+                heatMapMoveend(map);
+            });
+        }else if(element=='movestart'){
+            map.on(element, function (evt) {
+                if(mapVue.heatmapInstance!=''){
+                    var heatmapData = {
+                        max: 100,
+                        min: 0,
+                        data: []
+                    };
+                    mapVue.setHeatMapData(heatmapData,true);
                 }
             });
         }
     });
-
-    // var addPointStatus = false;
-    // var converLayer = this.converLayer;
-    // var featureOverlay = (eventName=='pointermove')?this.featureOverlay(map):'';
-    // this.highlight;
-    // map.on(eventName, function (evt) {
-    //     if(eventName=='singleclick'){
-    //         //地图绑定单击事件
-    //         me.singleClick(evt);
-    //     }else if(eventName=='pointermove'){
-    //         //地图绑定鼠标滑过事件
-    //         me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
-    //     }else if(eventName=='moveend'){
-    //         var zoom = map.getView().getZoom();  //获取当前地图的缩放级别
-    //         if(zoom >= 12){
-    //             if(!addPointStatus){
-    //                 console.log('添加点标记');
-    //                 data.forEach(item=>{
-    //                     me.addPoint(item.coord,item.lableName);
-    //                 });
-    //                 addPointStatus = true;
-    //             }
-    //         }else{
-    //             if(addPointStatus){
-    //                 me.layer.getSource().clear();   //控制地图图层不可见
-    //                 addPointStatus = false;
-    //             }
-    //         }
-    //     }
-    // });
 }
 function pointermoveMap(element,map){
     var converLayer = this.converLayer;
@@ -248,7 +202,7 @@ function pointermoveMap(element,map){
 function pointerMoveSetXY(element,map){
     map.on(element, function (evt) {
         var point = evt.pixel;
-        if(mapVue){
+        if(typeof(mapVue)!=='undefined'){
             var coordinate;
             var coordinateData = mapVue.allFloatDialogData;
             for(var p in coordinateData){
@@ -260,9 +214,9 @@ function pointerMoveSetXY(element,map){
                 }
             }
             if(coordinateData && coordinateData!='' && coordinateData[coordinate]){
-                mapVue.floatDialogLeft=point[0]+5;
-                mapVue.floatDialogTop=point[1]+5;
-                mapVue.floatDialogData = coordinateData[coordinate];
+                mapVue.floatCompData.left=point[0]+5;
+                mapVue.floatCompData.top=point[1]+5;
+                mapVue.floatCompData.items.table = coordinateData[coordinate];
                 mapVue.floatDialog = true;
             }else{
                 mapVue.floatDialog = false;
@@ -270,6 +224,23 @@ function pointerMoveSetXY(element,map){
 
         }
     });
+}
+//地图缩放or拖动处理逻辑
+function heatMapMoveend(map){
+    //窗体变化时，热力图渲染交由窗体变化逻辑处理
+    if(mapVue.resizeStatus){
+        mapVue.resizeStatus = false;
+        return;
+    }
+    //地图缩放or移动时处理逻辑
+    if(mapVue.heatmapInstance!=''){
+        let heatmapData = {
+            max: mapVue.heatmapData.max,
+            min: mapVue.heatmapData.min,
+            data: mapVue.heatmapPluginsData(mapVue.heatmapData.data)
+        };
+        mapVue.setHeatMapData(heatmapData);
+    }
 }
 function singleClick(evt){
     debugger;
@@ -627,7 +598,7 @@ function removeHotMap() {
     }
 }
 
-function showHotMap(heatData){
+function showHotMap(heatData,config){
     removeHotMap();
     //矢量图层 获取geojson数据
     var vectorSource = new ol.source.Vector({
@@ -636,24 +607,26 @@ function showHotMap(heatData){
             featureProjection : 'EPSG:4326'
         })
     });
-    // Heatmap热力图
-    this.loopHotVector = new ol.layer.Heatmap({
-        source: vectorSource,
-        opacity: [0, 0.8],//透明度
-        blur: 15,//模糊大小（以像素为单位）,默认15
-        radius: 12,//半径大小（以像素为单位,默认8
-        shadow: 250,//阴影像素大小，默认250
-        gradient:['black','blue','yellow','red'],//设置颜色
-        //矢量图层的渲染模式：
-        //'image'：矢量图层呈现为图像。性能出色，但点符号和文本始终随视图一起旋转，像素在缩放动画期间缩放。
-        //'vector'：矢量图层呈现为矢量。即使在动画期间也能获得最准确的渲染，但性能会降低。
-        renderMode: 'hotVector'
-    });
+    config['source'] = vectorSource;
+    config['renderMode'] = 'hotVector';
+    this.loopHotVector = new ol.layer.Heatmap(config);
+    // this.loopHotVector = new ol.layer.Heatmap({
+    //     source: vectorSource,
+    //     opacity: [0, 0.8],//透明度
+    //     blur: 15,//模糊大小（以像素为单位）,默认15
+    //     radius: 13,//半径大小（以像素为单位,默认8
+    //     shadow: 150,//阴影像素大小，默认250
+    //     gradient:['black','blue','yellow','red'],//设置颜色
+    //     //矢量图层的渲染模式：
+    //     //'image'：矢量图层呈现为图像。性能出色，但点符号和文本始终随视图一起旋转，像素在缩放动画期间缩放。
+    //     //'vector'：矢量图层呈现为矢量。即使在动画期间也能获得最准确的渲染，但性能会降低。
+    //     renderMode: 'hotVector'
+    // });
     this.map.addLayer(this.loopHotVector);
 
 }
 var dataIndex=0;
-function loopShowHotMap(heatDatas){
+function loopShowHotMap(heatDatas,config){
     // $('#year').html(heatDatas[dataIndex].date+heatDatas[dataIndex].text+'分布情况');
     showHotMap(heatDatas[dataIndex]);
     dataIndex++;

@@ -11,6 +11,7 @@
     // let apiRootPath='http://10.195.237.115:8120/hub/';
     configpre.api_rootPath=apiRootPath;
     configpre.api_loadModels=apiRootPath+'api/loadModels.html';
+    configpre.api_loadGisModels=apiRootPath+'map/loadGisModel.html';
 
     configpre.map_saveMapData=apiRootPath+'map/saveMapData.html';
     configpre.map_createFile=apiRootPath+'map/createFile.html';

@@ -14,9 +14,11 @@
     <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
     <script type="text/javascript" src="js/config.js"></script>
     <script src="js/bootstrap.js"></script>
+    <script src="js/component.js"></script>
     <link rel="stylesheet" href="css/ol.css" type="text/css">
     <script src="js/ol.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/heatmap.js"></script>
     <style>
         #app {
             position: absolute;
@@ -57,20 +59,42 @@
             position: absolute;
             width:200px;
             z-index:11;
-            color: red;
+            top:300px;
+            left:500px;
+            color: #606266;
+            padding: 15px 10px;
+            background: rgba(251, 251, 251, 0.6);
+        }
+        .el-float-table{
+            width: 100%;
+            text-align: left;
+        }
+        .el-float-td{
+            text-align: right;
+            vertical-align: middle;
+            table-layout:fixed;
             font-weight: bold;
-            background: rgba(88, 131, 226, 0.2);
+            font-size: 14px;
+            width: 80px;
+            padding-right: 5px;
+            box-sizing: border-box;
+        }
+        .ol-zoom {
+            top: .5em;
+            left: .5em;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
 <div id="app">
-    <div v-if="floatDialog" id="floatDialog" class="float_dialog" :style="{top:floatDialogTop+'px',left:floatDialogLeft+'px'}">
-        <div v-for="item in floatDialogData">
-            <el-col :span="8" style="text-align: right;">{{item.name!=null?item.name:'无'}}:</el-col>
-            <el-col :span="16">{{item.val!=null?item.val:'无'}}</el-col>
-        </div>
-    </div>
+    <!--<div v-if="floatDialog" id="floatDialog" class="float_dialog" :style="{top:floatDialogTop+'px',left:floatDialogLeft+'px'}">-->
+        <!--<div v-for="item in floatDialogData">-->
+            <!--<el-col :span="8" style="text-align: right;">{{item.name!=null?item.name:'无'}}:</el-col>-->
+            <!--<el-col :span="16">{{item.val!=null?item.val:'无'}}</el-col>-->
+        <!--</div>-->
+    <!--</div>-->
+    <float-component v-if="floatDialog" :data="floatCompData.items.table" :suffix="floatCompData.suffix" id="floatDialog" class="float_dialog" :style="{top:floatCompData.top+'px',left:floatCompData.left+'px'}"></float-component>
     <el-container>
         <el-main class="my-el-main">
             <div :id="form.target" style="width: 100%;height: 100%;"></div>
@@ -176,11 +200,9 @@
                                     <el-checkbox-group v-model="form.events">
                                         <el-checkbox label="singleclick" key="singleclick">单击</el-checkbox>
                                         <el-checkbox label="pointermove" key="pointermove">鼠标滑过</el-checkbox>
-                                        <el-checkbox label="moveend" key="moveend">缩放</el-checkbox>
                                     </el-checkbox-group>
                                 </el-form-item>
                                 <el-form-item style="text-align: left;">
-
                                     <el-button @click="resetForm('form')">重置</el-button>
                                 </el-form-item>
                             </el-tab-pane>
@@ -562,84 +584,83 @@
         </div>
         <div v-else>
             <el-form ref="formMarks" :model="formMarks" :rules="dialogRules" label-width="95px">
-                <el-form-item :label="title+'名称'" prop="name">
-                    <el-col :span="12"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col>
-                    <el-col :span="2">&nbsp;</el-col>
-                    <el-col :span="10"><el-switch v-model="formMarks.displayNameStatus" active-color="#13ce66" inactive-color="#ff4949" active-text="显示" inactive-text="不显示"></el-switch></el-col>
-                </el-form-item>
-                <el-form-item label="地址绑定" prop="addressCol">
-                    <el-select v-model="formMarks.addressCol" placeholder="请选择字段">
-                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="地理位置" prop="coordCol">
-                    <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
-                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
-                    <el-radio-group v-model="formMarks.carouselColType">
-                        <el-radio :label="0">否</el-radio>
-                        <el-radio :label="1">是</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
-                    <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
-                        <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="值绑定" prop="valCol">
-                    <el-select v-model="formMarks.valCol" placeholder="请选择字段">
-                        <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="渲染方式" prop="hotType" v-if="formMarks.dataType=='2'">
-                    <el-radio-group v-model="formMarks.hotType">
-                        <el-radio :label="0">个数渲染</el-radio>
-                        <el-radio :label="1">数值渲染</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="样式选择">
-                    <el-radio-group v-model="formMarks.styleType">
-                        <el-radio :label="0">默认</el-radio>
-                        <el-radio :label="1">自定义</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <div v-if="formMarks.styleType=='1'">
-                    <el-form-item label="显示方式" v-if="formMarks.dataType!='1' && formMarks.dataType!='2'">
-                        <el-radio-group v-model="formMarks.iconStatus">
-                            <el-radio :label="0">默认圆点</el-radio>
-                            <el-radio :label="1">图标</el-radio>
-                        </el-radio-group>
-                    </el-form-item>
-                    <div v-if="formMarks.iconStatus=='0'" style="text-align: left;">
-                        <el-form-item label="原点大小">
-                            <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
+                <el-container>
+                    <el-aside width="350px">
+                        <el-form-item :label="title+'名称'" prop="name">
+                            <el-row><el-col :span="20"><el-input v-model="formMarks.name" autocomplete="off"></el-input></el-col></el-row>
                         </el-form-item>
-                        <el-form-item label="原点颜色">
-                            <el-color-picker v-model="formMarks.imageColor"></el-color-picker>
-                        </el-form-item>
-                        <el-form-item label="文字颜色">
-                            <el-color-picker v-model="formMarks.textFillColor"></el-color-picker>
-                        </el-form-item>
-                        <el-form-item label="阴影颜色">
-                            <el-color-picker v-model="formMarks.textStrokeColor"></el-color-picker>
-                        </el-form-item>
-                        <el-form-item label="阴影大小">
-                            <el-input-number v-model="formMarks.textStrokeWidth" :min="1" :max="10"></el-input-number>
-                        </el-form-item>
-                    </div>
-                    <div v-else style="text-align: left;">
-                        <el-form-item label="图标清单" prop="iconData">
-                            <el-select v-model="formMarks.iconData" placeholder="请选择图标" @change="iconChangeData">
-                                <el-option v-for="(item,index) in iconList" :key="index" :label="item.iconNameCn" :value="index"></el-option>
+                        <el-form-item label="地址绑定" prop="addressCol">
+                            <el-select v-model="formMarks.addressCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
                             </el-select>
                         </el-form-item>
-                    </div>
-                </div>
+                        <el-form-item label="地理位置" prop="coordCol">
+                            <el-select v-model="formMarks.coordCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="是否轮播" prop="carouselColType" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                            <el-radio-group v-model="formMarks.carouselColType">
+                                <el-radio :label="0">否</el-radio>
+                                <el-radio :label="1">是</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <el-form-item label="轮播绑定" prop="carouselCol" v-if="formMarks.dataType=='1' || formMarks.dataType=='2'">
+                            <el-select v-model="formMarks.carouselCol" placeholder="请选择字段">
+                                <el-option v-for="item in dimensionColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="值绑定" prop="valCol">
+                            <el-select v-model="formMarks.valCol" placeholder="请选择字段">
+                                <el-option v-for="item in metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="渲染方式" prop="hotType" v-if="formMarks.dataType=='2'">
+                            <el-radio-group v-model="formMarks.hotType">
+                                <el-radio :label="1">数值渲染</el-radio>
+                                <el-radio :label="0">个数渲染</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                    </el-aside>
+                    <el-container>
+                        <el-header>热力样式</el-header>
+                        <el-main>
+                            <div v-if="formMarks.styleType=='1'">
+                                <el-form-item label="原点大小">
+                                    <el-input-number v-model="formMarks.radius" :min="1" :max="100"></el-input-number>
+                                </el-form-item>
+                                <el-form-item label="透明度" prop="hotOpacity">
+                                    <el-row><el-col :span="1">&nbsp;</el-col><el-col :span="16"><el-slider v-model="formMarks.hotOpacity" range :max="100"></el-slider></el-col></el-row>
+                                </el-form-item>
+                                <el-form-item label="模糊度" prop="hotBlur">
+                                    <el-row><el-col :span="1">&nbsp;</el-col><el-col :span="16"><el-slider v-model="formMarks.hotBlur" :max="100"></el-slider></el-col></el-row>
+                                </el-form-item>
+                                <el-form-item label="颜色梯度" prop="gradient">
+                                    <el-row>
+                                        <el-col :span="3">正常</el-col>
+                                        <el-col :span="9"><el-slider v-model="formMarks.gradient.general.percent" :max="100"></el-slider></el-col>
+                                        <el-col :span="1">&nbsp;</el-input-number></el-col>
+                                        <el-col :span="11"><el-color-picker v-model="formMarks.gradient.general.color"></el-color-picker></el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="3">警告</el-col>
+                                        <el-col :span="9"><el-slider v-model="formMarks.gradient.warnning.percent" :max="100"></el-slider></el-col>
+                                        <el-col :span="1">&nbsp;</el-input-number></el-col>
+                                        <el-col :span="11"><el-color-picker v-model="formMarks.gradient.warnning.color"></el-color-picker></el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="3">危险</el-col>
+                                        <el-col :span="9"><el-slider v-model="formMarks.gradient.danger.percent" :max="100"></el-slider></el-col>
+                                        <el-col :span="1">&nbsp;</el-input-number></el-col>
+                                        <el-col :span="11"><el-color-picker v-model="formMarks.gradient.danger.color"></el-color-picker></el-col>
+                                    </el-row>
+                                </el-form-item>
+                            </div>
+                        </el-main>
+                    </el-container>
+                </el-container>
             </el-form>
         </div>
-
         <div slot="footer" class="dialog-footer">
             <el-button @click="dialogDatabing = false">取 消</el-button>
             <el-button type="primary" @click="submitDialogForm('formMarks')">确 定</el-button>
@@ -650,6 +671,11 @@
     var mapVue= new Vue({
         el: '#app',
         data:{
+            settingMap:'',
+            heatmapInstance:'',
+            heatmapData:'',
+            resizeStatus:false,
+            testMapRaduis:15,
             dialogDataOperate:'',
             dialogDatabing:false,
             activeDataModel:[],
@@ -708,7 +734,14 @@
                 opt:'add',
                 MODEL_RELATION_ID:'',
                 dataType:'1',
-                hotType:0,
+                hotType:1,
+                hotOpacity:[0,50],
+                hotBlur:75,
+                gradient:{
+                    general:{percent:50,color:'#081DFF'},
+                    warnning:{percent:80,color:'#FFCC33'},
+                    danger:{percent:95,color:'#FF241C'}
+                }
             },
             dialogRules:{
                 name: [
@@ -750,7 +783,7 @@
                 areaColor:'rgba(88, 131, 226, 0.2)',
                 areaStrokeColor:'rgba(88, 131, 226, 1)',
                 areaStrokeWidth:2,
-                events:[]
+                events:['moveend','movestart']
             },
             rules:{
                 name: [
@@ -858,8 +891,16 @@
             styleDatas:'',
             saveFloatData:[],
             floatDialog:false,
-            floatDialogTop:0,
-            floatDialogLeft:0,
+//            floatDialogTop:0,
+//            floatDialogLeft:0,
+            floatCompData:{
+                suffix:true,
+                top:0,
+                left:0,
+                items:{
+                    table:[]
+                }
+            },
             floatDialogData:[{
                 val:'12',
                 name:'门诊人次'
@@ -867,10 +908,19 @@
                 val:'古美',
                 name:'机构名称'
             }],
-            allFloatDialogData:'',
+            allFloatDialogData:''
         },
         created(){
             this.loadParam();
+        },
+        mounted() {
+            let me = this;
+            // 窗口发生变化的时候
+            window.onresize = () => {
+                return (() => {
+                    me.mapResize()
+                })()
+            }
         },
         methods:{
             targetChange:function(val){
@@ -885,12 +935,12 @@
                             cfgs[p] = this.mapCfgs.styleInfo[p];
                         }
                         if(type=='create'){
-                            initMap(cfgs);
+                            this.settingMap = initMap(cfgs);
                             this.loadDataByEvents(cfgs.events);
                             this.showMap = true;
                         }else if(type='save'){
                             if(!this.showMap){
-                                initMap(cfgs);
+                                this.settingMap = initMap(cfgs);
                                 this.loadDataByEvents(cfgs.events);
                             }
                             let params = this.mapCfgs;
@@ -925,7 +975,7 @@
             resetForm:function(formName) {
                 this.$refs[formName].resetFields();
                 this.form.otherMap=0;
-                this.form.events=[];
+                this.form.events=['moveend','movestart'];
                 this.resetMapCfgs();
             },
             getMapCfgs:function(){
@@ -1124,7 +1174,7 @@
                 this.formMarks.coordCol='';
                 this.formMarks.carouselCol='';
                 this.formMarks.carouselColType=0;
-                this.formMarks.hotType=0;
+                this.formMarks.hotType=1;
                 this.formMarks.valCol='';
                 this.formMarks.styleType=0;
                 this.formMarks.status='1';
@@ -1143,6 +1193,15 @@
                 this.formMarks.textStrokeColor='#ffcc33';
                 this.formMarks.textStrokeWidth=2;
                 this.formMarks.opt='add';
+                this.formMarks.hotOpacity = [0,50];
+                this.formMarks.hotBlur = 75;
+                this.formMarks.gradient = {
+                    general:{percent:50,color:'#081DFF'},
+                    warnning:{percent:80,color:'#FFCC33'},
+                    danger:{percent:95,color:'#FF241C'}
+                };
+
+
             },
             loadAreaCode:function(method,api,data){
                 let me = this;
@@ -1378,6 +1437,9 @@
                 marksStyleData['displayNameStatus'] = formMarks.displayNameStatus;
                 marksStyleData['carouselColType']=formMarks.carouselColType;
                 marksStyleData['hotType']=formMarks.hotType;
+                marksStyleData['hotOpacity']=formMarks.hotOpacity;
+                marksStyleData['hotBlur']=formMarks.hotBlur;
+                marksStyleData['gradient']=formMarks.gradient;
                 data['MODEL_RELATION_NAME']=formMarks.name;
                 data['MODEL_RELATION_TYPE']=formMarks.dataType;
                 if(formMarks.opt=='modify'){
@@ -1400,10 +1462,10 @@
                 this.openWin(type,'modify',row);
             },
             showMarks:function(index,row,type){
-//                if(!this.showMap){
-//                    this.myMessage('请先创建地图','warning');
-//                    return;
-//                }
+                if(!this.showMap){
+                    this.myMessage('请先创建地图','warning');
+                    return;
+                }
                 let params = {modelRelation:[row]};
 
                 let modelStyleData = row.MODEL_STYLE_DATA;
@@ -1486,6 +1548,7 @@
                         this.carourselData(body);
                         break;
                     case '2':
+//                        this.heatmapData = body;
                         this.carourselHeatMap(body)
                         break;
                     case '3':
@@ -1518,33 +1581,145 @@
                 if(typeof(style) == "string"){
                     style = JSON.parse(body.style);
                 }
+                if(style.hotType=='0'){
+                    this.olOriginalHeatMap(body,style);
+                }else{
+                    this.heatmapPlugins(body,style);
+                }
+            },
+            //openlayer框架原生热力图调用方法
+            olOriginalHeatMap:function(body,style){
+                let gradient,opacity;
+                if(style.gradient){
+                    gradient = ['black'];
+                    gradient.push(style.gradient.general.color);
+                    gradient.push(style.gradient.warnning.color);
+                    gradient.push(style.gradient.danger.color);
+                }
+                if(style.hotOpacity){
+                    opacity = [style.hotOpacity[0]/100,style.hotOpacity[1]/100];
+                }
+                let config = {
+                    opacity: opacity || [0, 0.8],//透明度
+                    blur: style.hotBlur || 15,//模糊大小（以像素为单位）,默认15
+                    radius: style.radius || 13,//半径大小（以像素为单位,默认8
+                    shadow: 150,//阴影像素大小，默认250
+                    gradient:gradient || ['black','blue','yellow','red'],//设置颜色
+                };
                 if(style.carouselColType && style.carouselColType=='1'){
                     let dataIndex=0;
                     this.loopHeatMap = setInterval(loopShowHotMapFn,2000);
                     function loopShowHotMapFn(){
                         let heatDatas = body.heatData;
-                        showHotMap(heatDatas[dataIndex]);
+                        showHotMap(heatDatas[dataIndex],config);
                         dataIndex++;
                         if(dataIndex==heatDatas.length){
                             dataIndex=0;
                         }
                     }
                 }else{
-                    loopShowHotMap(body.heatData);
+                    loopShowHotMap(body.heatData,config);
                 }
+            },
+            //openlayer框架结合heatmap插件，显示热力图方法
+            heatmapPlugins:function(body,style){
+                if(body.heatData.length==0){
+                    return;
+                }
+                let gradient,maxOpacity,minOpacity,blur;
+                if(style.gradient){
+                    gradient = {};
+                    gradient[style.gradient.general.percent/100] = style.gradient.general.color;
+                    gradient[style.gradient.warnning.percent/100] = style.gradient.warnning.color;
+                    gradient[style.gradient.danger.percent/100] = style.gradient.danger.color;
+                }
+                if(style.hotOpacity){
+                    minOpacity = style.hotOpacity[0]/100;
+                    maxOpacity = style.hotOpacity[1]/100;
+                }
+                if(style.hotBlur){
+                    blur = style.hotBlur/100;
+                }
+                this.heatConfig = {
+                    container: $(".ol-viewport")[0],
+                    radius: style.radius||20,
+                    maxOpacity: maxOpacity || .5,
+                    minOpacity: minOpacity || 0,
+                    blur: blur || .75,
+                    gradient:gradient || {
+                        '0.5': 'blue',
+                        '0.8': 'yellow',
+                        '0.95': 'red'
+                    }
+                };
+                if(this.heatmapInstance == ''){
+                    this.heatmapInstance = h337.create(this.heatConfig);
+                }
+                let heatmapData = {
+                    max: body.maxVal || 20,
+                    min: 0,
+                    data: []
+                };
+                if(style.carouselColType && style.carouselColType=='1'){
+                    let dataIndex=0;
+                    let me = this;
+                    this.loopHeatMap = setInterval(loopShowHotMapFn,2000);
+                    function loopShowHotMapFn(){
+                        let features = body.heatData[dataIndex].features;
+                        heatmapData['data'] = me.heatmapPluginsData(features);
+                        me.heatmapData = {data:features,max:heatmapData.max,min:heatmapData.min};
+                        me.setHeatMapData(heatmapData);
+                        dataIndex++;
+                        if(dataIndex==body.heatData.length){
+                            dataIndex=0;
+                        }
+                    }
+                }else{
+                    let features = body.heatData[body.heatData.length-1].features;
+                    this.heatmapData = {data:features,max:heatmapData.max,min:heatmapData.min};
+                    heatmapData['data'] = this.heatmapPluginsData(features);
+                    this.setHeatMapData(heatmapData);
+                }
+            },
+            heatmapPluginsData:function(data){
+                let datas = [];
+                for(let i=0,length=data.length;i<length;i++){
+                    let xy =this.settingMap.getPixelFromCoordinate(data[i].coordinates);
+                    if(i==0){
+                        let x = parseInt(xy[0]);
+                        let y = parseInt(xy[1]);
+                        xy = [x,y]
+                    }
+                    var dataPoint = {
+                        x: xy[0],
+                        y: xy[1],
+                        value: data[i].count
+                    };
+                    datas.push(dataPoint);
+                }
+                return datas;
+            },
+            setHeatMapData:function(data){
+                this.heatmapInstance.setData(data);
             },
             cleanMapData:function(){
                 cleanMarks();
                 cleanMarks(true);
-                this.cleanLoopHearMap();
+                this.cleanLoopHeatMap();
                 this.closeCarourse();
             },
-            cleanLoopHearMap:function(){
+            cleanLoopHeatMap:function(){
                 if(this.loopHeatMap){
                     clearInterval(this.loopHeatMap);
                     this.loopHeatMap = undefined;
                 }
                 removeHotMap();
+                this.removeHeatMap();
+            },
+            removeHeatMap:function(){
+                $('.heatmap-canvas').remove();
+                this.heatmapInstance='';
+                this.heatConfig={};
             },
             carourselData:function(body){
                 this.cleanMapData();
@@ -1993,6 +2168,19 @@
             cleanFloatTableSelection:function(){
                 this.$refs.multipleFloatTable.clearSelection();
                 this.innerFloatVisible = false;
+            },
+            mapResize:function(){
+                this.resizeStatus=true;
+                if(this.heatmapInstance!=''){
+                    $('.heatmap-canvas').remove();
+                    this.heatmapInstance = h337.create(this.heatConfig);
+                    let heatmapData = {
+                        max: this.heatmapData.max,
+                        min: this.heatmapData.min,
+                        data: this.heatmapPluginsData(this.heatmapData.data)
+                    };
+                    this.setHeatMapData(heatmapData);
+                }
             }
         }
     });
