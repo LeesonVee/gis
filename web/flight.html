@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>二次贝塞尔曲线动画</title>
+    <style>
+        body {
+            background: #0f1632;
+        }
+
+        #canvas {
+            border: 1px solid #ccc;
+        }
+        #img {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+<canvas id="canvas" width="1500" height="750"></canvas>
+
+</body>
+
+
+
+<script type="text/javascript">
+    /**
+     * 二次贝塞尔曲线动画
+     * @param  {Array<number>} start 起点坐标
+     * @param  {Array<number>} 曲度点坐标(也就是转弯的点,不是准确的坐标,只是大致的方向)
+     * @param  {Array<number>} end 终点坐标
+     * @param  {number} percent 绘制百分比(0-100)
+     */
+
+    function drawCurvePath(start, point, end, percent){
+        ctx.beginPath();    //开始画线
+        ctx.moveTo(start[0], start[1]);   //画笔移动到起点
+        for (var t = 0; t <= percent / 100; t += 0.005) {
+            //获取每个时间点的坐标
+            var x = quadraticBezier(start[0], point[0], end[0], t);
+            var y = quadraticBezier(start[1], point[1], end[1], t);
+            ctx.lineTo(x, y);   //画出上个时间点到当前时间点的直线
+        }
+        ctx.lineWidth=2;
+        ctx.stroke();   //描边
+        createHeadLight(x,y);
+//        drawText(data.department, data.value, x, y);
+//        drawImg(data.img,x,y);
+    }
+    function drawCurvePaths(curveData,percent){
+        curveData.forEach(item=>{
+            ctx.beginPath();
+            ctx.strokeStyle = createLinearGradient(item.start,item.end,'rgba(255,50,13,.2)','#ff320d');
+            ctx.moveTo(item.start[0], item.start[1]);   //画笔移动到起点
+            for (var t = 0; t <= percent / 100; t += 0.005) {
+                //获取每个时间点的坐标
+                var x = quadraticBezier(item.start[0], item.point[0], item.end[0], t);
+                var y = quadraticBezier(item.start[1], item.point[1], item.end[1], t);
+                ctx.lineTo(x, y);   //画出上个时间点到当前时间点的直线
+            }
+            ctx.lineWidth=2;
+            ctx.stroke();   //描边
+            createHeadLight(x,y);
+            ctx.closePath();
+        });
+    }
+
+    /**
+     * 二次贝塞尔曲线方程
+     * @param  {Array<number>} start 起点
+     * @param  {Array<number>} 曲度点
+     * @param  {Array<number>} end 终点
+     * @param  {number} 绘制进度(0-1)
+     */
+    function quadraticBezier(p0, p1, p2, t) {
+        var k = 1 - t;
+        return k * k * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+    }
+
+    /**
+     * 创建线性渐变
+     * @param  {Array<number>} start 起点
+     * @param  {Array<number>} 曲度点
+     * @param  {Array<number>} end 终点
+     * @param  {number} 绘制进度(0-1)
+     */
+    function createLinearGradient(start,end,startColor,endColor){
+        var lineGradient = ctx.createLinearGradient(...start, ...end);
+        lineGradient.addColorStop(0, startColor);
+        lineGradient.addColorStop(0.3, '#2a68ff');
+        lineGradient.addColorStop(1, endColor);
+        return lineGradient
+    }
+    function createHeadLight(x,y){
+        ctx.beginPath();
+        //创建径向渐变
+        var radialGradient = ctx.createRadialGradient(x, y, 0, x, y, 20);
+        radialGradient.addColorStop(0, "rgba(255,50,13,1)");
+        radialGradient.addColorStop(.2, "rgba(255,50,13,.8)");
+        radialGradient.addColorStop(1, "transparent");
+
+        ctx.fillStyle = radialGradient;
+        //画圆
+        ctx.arc(x, y, 10, 0, 2 * Math.PI, false);
+        debugger;
+        ctx.fill();
+    }
+
+    function drawText(department, value, x, y) {
+        ctx.fillStyle = '#fff'
+        ctx.font = "22px 微软雅黑";
+        ctx.fillText(department, x + 30, y + 20);  //为了使文本在光晕右下角x,y轴需要偏移一些距离
+        var width = ctx.measureText(value).width;   //获取文本的宽度
+        ctx.fillStyle = createLinearGradient([x + 30, 0],   //文本渐变x轴的渲染范围是[x+30,x+30+文本的宽度],
+            [x + 30 + width, 0],       //这里y取0,是因为没找到获取文本高的api,写0也是可以的
+            '#fffd00',
+            '#ff6d00'
+        );
+        ctx.fillText(value.toLocaleString(), x + 30, y + 50);
+    }
+    function drawImg(img,x,y){
+        ctx.drawImage(img,x-20,y-20);
+    }
+
+
+    var ctx = document.getElementById('canvas').getContext('2d');
+    //    var img = document.getElementById('img');
+    let img = new Image();
+    img.src="img/bYuAw4C.png";
+    var percent = 0;
+    //    var data = {
+    //        start: [0, 600],
+    ////        point: [200, 150],
+    //        point: [200, 250],
+    ////        end: [100, 400],
+    //        end: [400, 200],
+    //        department: '数据1',
+    //        value: 4321,
+    //        img:img
+    //    }
+    let item1 ={
+        start: [0, 600],
+        point: [200, 250],
+        end: [400, 200],
+        department: '数据1',
+        value: 4321,
+        img:img,
+        percent:0
+    };
+    let item2 ={
+        start: [100, 600],
+        point: [240, 250],
+        end: [400, 200],
+        department: '数据2',
+        value: 4321,
+        img:img,
+        percent:0
+    };
+    let item3 ={
+        start: [150, 600],
+        point: [260, 250],
+        end: [400, 200],
+        department: '数据3',
+        value: 4321,
+        img:img,
+        percent:0
+    };
+    let data = [item1,item2];
+
+    function init(){
+        percent = 0;  //每次重置进程
+        draw();
+    }
+    function draws(){
+        ctx.clearRect(0, 0, 1500, 750);  //每次清除画布
+        data.forEach(item=>{
+            ctx.strokeStyle = createLinearGradient(item.start,item.end,'rgba(255,50,13,.2)','#ff320d');
+            drawCurvePath(item.start, item.point, item.end, item.percent);
+            item.percent+=0.5;
+            if(item.percent<=100){
+                requestAnimationFrame(draw);
+            }else{
+                init();
+            }
+        });
+    };
+    function draw(){
+        ctx.clearRect(0, 0, 1500, 750);  //每次清除画布
+//        ctx.strokeStyle = createLinearGradient(data.start,data.end,'rgba(255,50,13,.2)','#ff320d');
+//        drawCurvePath(data.start, data.point, data.end, percent);
+        drawCurvePaths(data,percent);
+        percent += 0.5; //进程增加,这个控制动画速度
+
+        if (percent <= 100) { //没有画完接着调用,画完的话重置进度
+            requestAnimationFrame(draw);
+        }else{
+            init()
+        }
+    }
+    init();
+</script>
+</html>
