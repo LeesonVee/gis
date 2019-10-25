@@ -1,0 +1,174 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>canvas</title>
+    <script type="text/javascript" src="js/flight.js"></script>
+    <style>
+        body {
+            background: #0f1632;
+        }
+
+        #canvas {
+            border: 1px solid #ccc;
+        }
+        #img {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas" width="1500" height="750"></canvas>
+</body>
+<script>
+    let datas = [{
+        start:[150,600],
+        end:[400,200],
+//        lineStroke:['rgba(255,50,13,.2)','#2a68ff','#ff320d'],
+        lineWidth:2
+    },{
+        start: [100, 600],
+        end: [400, 200],
+//        lineStroke:['rgba(255,50,13,.2)','#ff1dd6','#0df31c'],
+        lineWidth:2
+    },{
+        start: [200, 700],
+        end: [400, 200],
+//        lineStroke:['rgba(255,50,13,.2)','#ff1dd6','#0df31c'],
+        lineWidth:2
+    },{
+        start: [500, 700],
+        end: [400, 200],
+    },{
+        start: [450, 700],
+        end: [400, 200],
+    },{
+        start: [410, 700],
+        end: [400, 200],
+    },{
+        start: [350, 700],
+        end: [400, 200],
+    },{
+        start: [340, 700],
+        end: [400, 200],
+    },{
+        start: [310, 700],
+        end: [400, 200],
+    },{
+        start: [280, 700],
+        end: [400, 200],
+    },{
+        start: [230, 700],
+        end: [400, 200],
+    },{
+        start: [190, 700],
+        end: [400, 200],
+    },{
+        start: [160, 700],
+        end: [400, 200],
+    },{
+        start: [120, 700],
+        end: [400, 200],
+    },{
+        start: [110, 700],
+        end: [400, 200],
+    },{
+        start: [110, 200],
+        end: [400, 200],
+    },{
+        start: [110, 190],
+        end: [400, 200],
+    },{
+        start: [110, 170],
+        end: [400, 200],
+    },{
+        start: [10, 150],
+        end: [400, 200],
+    },{
+        start: [100, 130],
+        end: [400, 200],
+    },{
+        start: [100, 110],
+        end: [400, 200],
+    },{
+        start: [100, 90],
+        end: [400, 200],
+    },{
+        start: [500, 90],
+        end: [400, 200],
+    },{
+        start: [1000, 90],
+        end: [400, 200],
+    },{
+        start: [1000, 150],
+        end: [400, 200],
+    },{
+        start: [1000, 180],
+        end: [400, 200],
+    },{
+        start: [1000, 280],
+        end: [400, 200],
+    },{
+        start: [1000, 580],
+        end: [400, 200],
+        lineStroke:['rgba(255,50,13,.2)','#ceff07','#a1b2f3']
+    },{
+        start: [700, 580],
+        end: [400, 200],
+        lineStroke:['rgba(255,50,13,.2)','#ff1dd6','#0df31c'],
+    }];
+function getPoint(datas){
+    if(datas && datas.length>0){
+        datas.forEach(item=>{
+            let start = item.start;
+            let end = item.end;
+            let x,y;
+            if(start[0]-end[0]<0){
+                x = start[0]+(start[0]+end[0])/4;
+            }else if(start[0]-end[0]==0){
+                x = end[0]+(start[0]+end[0])/4;
+            }else{
+                x = start[0]-(start[0]+end[0])/12;
+            }
+            if(start[1]-end[1]<0){
+                y = start[1]-(start[1]+end[1])/12;
+            }else if(start[1]-end[1] == 0){
+                y = start[1]-10;
+            }else{
+                y = end[1]+(start[1]+end[1])/12;
+            }
+            item['point']=[x,y];
+        });
+    }
+}
+
+function drawFlight(datas){
+    getPoint(datas);
+    let flightData = {
+        ctx:document.getElementById('canvas').getContext('2d'),
+        data:{
+            percent:0,
+            rate:0.5,
+            width:1500,
+            height:768,
+            curves:datas
+        }
+    };
+    flightConfig = flightData;
+    init();
+//    initFlight(flightData);
+}
+    function initFlight(data){
+        let flightCfg = {
+            ctx:document.getElementById('canvas').getContext('2d'),
+            data:data
+        }
+        this.flightConfig =flightCfg;
+        init();
+    }
+drawFlight(datas);
+
+</script>
+</html>
