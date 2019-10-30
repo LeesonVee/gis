@@ -175,7 +175,7 @@ function addEvent(jsonAreaCode,map){
             pointerMoveSetXY(element,map);
         }else if(element=='moveend'){
             map.on(element, function (evt) {
-                heatMapMoveend(map);
+                mapMoveend(map)
             });
         }else if(element=='movestart'){
             map.on(element, function (evt) {
@@ -186,6 +186,13 @@ function addEvent(jsonAreaCode,map){
                         data: []
                     };
                     mapVue.setHeatMapData(heatmapData,true);
+                }
+                if(mapVue.flightInstance!=''){
+                    if(mapVue.resizeStatus){
+                        mapVue.resizeStatus = false;
+                        return;
+                    }
+                    cleanFlight(mapVue.flightInstance);
                 }
             });
         }
@@ -226,13 +233,17 @@ function pointerMoveSetXY(element,map){
     });
 }
 //地图缩放or拖动处理逻辑
-function heatMapMoveend(map){
+function mapMoveend(map){
     //窗体变化时，热力图渲染交由窗体变化逻辑处理
     if(mapVue.resizeStatus){
         mapVue.resizeStatus = false;
         return;
     }
-    //地图缩放or移动时处理逻辑
+    heatMapMoveend(map);
+    flightMapMoveend(map);
+}
+//地图缩放or拖动 热力图处理逻辑
+function heatMapMoveend(map){
     if(mapVue.heatmapInstance!=''){
         let heatmapData = {
             max: mapVue.heatmapData.max,
@@ -240,6 +251,13 @@ function heatMapMoveend(map){
             data: mapVue.heatmapPluginsData(mapVue.heatmapData.data)
         };
         mapVue.setHeatMapData(heatmapData);
+    }
+}
+//地图缩放or拖动 分线图处理逻辑
+function flightMapMoveend(map){
+    //地图缩放or移动时处理逻辑
+    if(mapVue.flightInstance!=''){
+        mapVue.drawFlight(mapVue.flightPluginsData());
     }
 }
 function singleClick(evt){
