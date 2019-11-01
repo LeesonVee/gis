@@ -1,4 +1,62 @@
 html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
+
+#app {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /*background-color: #000;*/
+}
+.el-container{
+    width:100%;
+    height:100%;
+}
+.my-el-main{
+    color:#333;
+    text-align:center;
+    width:100%;
+    height:100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+.el-footer {
+    background-color: #B3C0D1;
+    color: #333;
+    text-align: center;
+    line-height: 60px;
+}
+.el-header {
+    background-color: #B3C0D1;
+    color: #333;
+    line-height: 60px;
+}
+.row_background{
+    background: #f0f9eb;
+}
+
+.el-float-table{
+    width: 100%;
+    text-align: left;
+}
+.el-float-td{
+    text-align: right;
+    vertical-align: middle;
+    table-layout:fixed;
+    font-weight: bold;
+    font-size: 14px;
+    width: 80px;
+    padding-right: 5px;
+    box-sizing: border-box;
+}
+.ol-zoom {
+    top: .5em;
+    left: .5em;
+    z-index: 9999;
+}
+
+
 .fullScreen{
     width: 100%;
     height: 100%;
@@ -44,11 +102,13 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
 .bottom_right{
     position:absolute;
     z-index:10;
-    width:200px;
+    width:210px;
     right: 5px;
     bottom: 5px;
     text-align: left;
     font-weight: bold;
+    max-height: 400px;
+    overflow-y: auto;
     background-color: rgba(88, 131, 226, 0.7);
 }
 .div_circle{
@@ -85,18 +145,4 @@ html,head,body{width: 100%;height: 100%;margin: 0px;padding: 0px;}
     color: #606266;
     padding: 15px 10px;
     background: rgba(251, 251, 251, 0.6);
-}
-.el-float-table{
-    width: 100%;
-    text-align: left;
-}
-.el-float-td{
-    text-align: right;
-    vertical-align: middle;
-    table-layout:fixed;
-    font-weight: bold;
-    font-size: 14px;
-    width: 80px;
-    padding-right: 5px;
-    box-sizing: border-box;
 }
