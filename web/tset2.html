@@ -1,0 +1,2584 @@
+<meta charset="utf-8">
+<style type="text/css">
+    /*bootstrap 网格样式修改*/
+    .col-sm-12 {
+        padding-right: 10px;
+        padding-left: 8px;
+    }
+
+    /* .row {
+   margin-right: 0px;
+} */
+    .el-container {
+        height: 100%;
+    }
+
+    .el-aside {
+        color: #333;
+        text-align: left;
+        height: 100%;
+        min-height: 600px;
+        border-right: 1px solid #ccc;
+        overflow-x: hidden;
+    }
+
+    .el-main-datamodel {
+        color: #333;
+        text-align: left;
+        height: 100%;
+        min-height: 600px;
+        padding: 0px;
+    }
+
+    .column-data-top {
+        width: 100%;
+        height: 20px;
+        line-height: 20px;
+        text-align: left;
+    }
+
+    .dimension-bottom {
+        width: 100%;
+        height: 360px;
+        overflow-y: auto;
+    }
+
+    .measure-bottom {
+        position: absolute;
+        top: 400px;
+        bottom: 0px;
+        width: 100%;
+        overflow-y: auto;
+    }
+
+    .dimension-bottom::-webkit-scrollbar {
+        display: none;
+    }
+
+    .modal-dialog-mini {
+        width: 20%;
+        min-width: 300px;
+        margin: 30px auto;
+        position: relative;
+    }
+
+    .modal-dialog-small {
+        width: 42%;
+        min-width: 800px;
+        margin: 30px auto;
+        position: relative;
+    }
+
+    .dim-row-padding {
+        padding: 8px 0;
+    }
+
+    .dim-row-active {
+        border: 1px solid #297b99;
+        background: #fff;
+        border-radius: 3px;
+    }
+
+    .modal-list-icon {
+        float: right;
+        width: 25px;
+        height: 25px;
+        line-height: 25px;
+        font-size: 25px;
+        cursor: pointer;
+    }
+
+    .modal-lists {
+        height: 400px;
+    }
+
+    .modal-list-max-height {
+        height: 270px;
+        overflow-y: auto;
+        border-bottom: 1px solid #DCDFE6;
+    }
+
+    .modal-list-col-item {
+        width: 100%;
+        padding-top: 3px;
+        text-align: left;
+    }
+
+    .modal-list-col-item2 {
+        width: 100%;
+        padding: 5px 0;
+        text-align: left;
+    }
+
+    .modal-list-defiend {
+        color: #606266;
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .hoverBg {
+        background-color: #f5f5f5;
+    }
+
+    .el-radio + .el-radio {
+        margin-left: 10px;
+    }
+
+    .el-radio__label {
+        font-size: 14px;
+        padding-left: 5px;
+    }
+</style>
+<div class="container" style="width: 400px;" id="dataModelapp">
+    <div class="row">
+        <div class="col-sm-12" @click="changeDisplay" style="height:30px;padding-top:5px">
+            <div style="cursor: pointer; "><i style="color:#337ab7;padding-right: 10px" v-bind:title="mouseoverTip"
+                                              class="glyphicon glyphicon-retweet"></i>{{defaultText}}
+            </div>
+        </div>
+    </div>
+    <div class="row" v-bind:style="{display:trDisplay?'block':'none',height:dataModelPanelH}">
+        <div class="col-sm-12">
+            <div class="row">
+                <div class="col-sm-7">
+                    <el-input type="text" placeholder="输入关键字" prefix-icon="el-icon-search" v-model="searchKey" maxlength="15" size="small"></el-input>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table table-bordered" id="datamodeltable"
+                           style="table-layout: fixed;word-break: break-all;text-align: center">
+                        <thead>
+                        <tr>
+                            <td width="15%">
+                                序号
+                            </td>
+                            <td style="display: none">ID</td>
+                            <td>
+                                名称
+                            </td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="(item,index) in dataModelList.filter(data => !searchKey || data.CN_NAME.toLowerCase().includes(searchKey.toLowerCase()))"  v-cloak
+                            @click="dealModelData('dataModel',item,$event)" style="cursor: pointer">
+                            <td>{{index+1}}</td>
+                            <td class="idHide" style="display: none">{{item.ID}}</td>
+                            <td>{{item.CN_NAME}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <el-pagination
+                            @current-change="handleCurrentChange"
+                            :current-page.sync="currentPage"
+                            :page-size="pageSize"
+                            :prev-text="prevText"
+                            :next-text="nextText"
+                            layout="prev,next,jumper"
+                            :total="totalCount">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" v-bind:style="{display:trDisplay?'none':'block',height:dataModelPanelH}">
+        <div class="col-sm-12" style="height:100%;">
+            <el-container>
+                <el-aside width="200px">
+                    <el-collapse v-model="activeNames" v-for="item in selectedColumnList" v-if="item.display">
+                        <el-collapse-item :title="item.title" :name="item.name">
+                            <div style="padding-right: 5px;">
+                                <div :id="item.name">
+                                    <el-row v-if="item.name=='orderBy'">
+                                        <el-col :span="14">
+                                            <el-select v-model="orderByCol" placeholder="请选择" :disabled="orderByDisable"
+                                                       size="small" @change="orderByChange">
+                                                <el-option
+                                                        v-for="item in orderByCols"
+                                                        :key="item.key"
+                                                        :code="item.code"
+                                                        :label="item.text"
+                                                        :value="item.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                        <el-col :span="1">&nbsp;&nbsp;</el-col>
+                                        <el-col :span="9">
+                                            <el-select v-model="orderByType" placeholder="请选择"
+                                                       :disabled="orderByDisable" size="small" @change="orderByChange">
+                                                <el-option
+                                                        v-for="item in orderByTypes"
+                                                        :key="item.key"
+                                                        :label="item.text"
+                                                        :value="item.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-collapse-item>
+                    </el-collapse>
+                </el-aside>
+                <el-main class="el-main-datamodel">
+                    <div class="column-data-top"><b>{{dimensionName}}</b></div>
+                    <div id="dimension-all" class="dimension-bottom"></div>
+                    <div class="column-data-top"><b>{{measureName}}</b></div>
+                    <div id="measure-all" class="measure-bottom"></div>
+                </el-main>
+            </el-container>
+        </div>
+    </div>
+    <!-- 数据绑定 -->
+    <div id="dimension-all-clone" style="display: none;max-height:300px;">
+        <!--<div v-for="(item, index) in dimensions" v-if="item.filtered" style="border: 0;cursor: default"-->
+        <!--class="list-group-item tinted filtered" v-bind:datamodel_id="dataModelId"-->
+        <!--v-bind:column_name="item.COLUMN_NAME" v-bind:column_rname="item.COLUMN_RENAME"-->
+        <!--v-bind:column_data_type="item.COLUMN_DATA_TYPE">-->
+        <!--<i class="glyphicon glyphicon-move" style="cursor: grab"></i><span style="cursor: default">&nbsp;&nbsp;{{item.COLUMN_RENAME||item.COLUMN_NAME}}</span>-->
+        <!--</div>-->
+        <div  v-for="(item, index) in dimensions" style="border: 0;cursor: default" class="list-group-item tinted" v-bind:datamodel_id="dataModelId"
+              v-bind:column_name="item.COLUMN_NAME" v-bind:column_rname="item.COLUMN_RENAME"
+              v-bind:column_data_type="item.COLUMN_DATA_TYPE" onclick="openModals('normal',this,false)">
+            <i class="glyphicon glyphicon-move" style="cursor: grab"></i><span style="cursor: default;">&nbsp;&nbsp;{{item.COLUMN_RENAME||item.COLUMN_NAME}}</span>
+        </div>
+    </div>
+    <div id="measure-all-clone" style="display: none">
+        <!--<div v-for="(item, index) in measures" v-if="item.filtered" style="border: 0;cursor: default"-->
+        <!--class="list-group-item tinted filtered" v-bind:datamodel_id="dataModelId"-->
+        <!--v-bind:column_name="item.COLUMN_NAME" v-bind:column_rname="item.COLUMN_RENAME"-->
+        <!--v-bind:column_data_type="item.COLUMN_DATA_TYPE">-->
+        <!--<i class="glyphicon glyphicon-move" style="cursor: grab"></i><span style="cursor: default">&nbsp;&nbsp;{{item.COLUMN_RENAME||item.COLUMN_NAME}}</span>-->
+        <!--</div>-->
+        <div v-for="(item, index) in measures" style="border: 0;cursor: default" class="list-group-item tinted" v-bind:datamodel_id="dataModelId"
+             v-bind:column_name="item.COLUMN_NAME" v-bind:column_rname="item.COLUMN_RENAME"
+             v-bind:column_data_type="item.COLUMN_DATA_TYPE"
+             v-bind:column_type="item.COLUMN_TYPE" v-bind:column_formula="item.COLUMN_FORMULA"
+             v-bind:column_formula_show="item.COLUMN_FORMULA_SHOW" onclick="openModals('mini',this,false)"
+             oncontextmenu="measureRightMenu(this)">
+            <i class="glyphicon glyphicon-move" style="cursor: grab"></i><span style="cursor: default;">&nbsp;&nbsp;{{item.COLUMN_RENAME||item.COLUMN_NAME}}</span>
+        </div>
+    </div>
+    <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="myFilterModalLabel"
+         data-backdrop="static">
+        <div :class="miniModal?'modal-dialog-mini':'modal-dialog-small'" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalLabel">数据筛选({{dialogTitle}})</h4>
+                </div>
+                <div class="modal-body" style="text-align: center;" v-if="miniModal">
+                    <el-row>
+                        <el-col :span="24">
+                            <el-radio-group v-model="rangeVal" @change="changeRangeType">
+                                <el-radio label="1">范围</el-radio>
+                                <el-radio label="2">至少</el-radio>
+                                <el-radio label="3">至多</el-radio>
+                            </el-radio-group>
+                        </el-col>
+                    </el-row>
+                    <el-row>&nbsp;</el-row>
+                    <el-row>
+                        <el-col :span="4">&nbsp;</el-col>
+                        <el-col :span="8">
+                            <el-input v-model="rangeValL" size="small" :disabled="rangeLStatus"
+                                      @keyup.native="numberCheck('left')"></el-input>
+                        </el-col>
+                        <el-col :span="3">&nbsp;</el-col>
+                        <el-col :span="8">
+                            <el-input v-model="rangeValR" size="small" :disabled="rangeRStatus"
+                                      @keyup.native="numberCheck('right')"></el-input>
+                        </el-col>
+                        <el-col :span="1">&nbsp;</el-col>
+                    </el-row>
+                    <el-row>&nbsp;</el-row>
+                    <el-row v-if="!loadRangeStatus">
+                        <el-col :span="24">
+                            <el-button type="primary" size="mini" @click="showRange(true)">加载范围</el-button>
+                        </el-col>
+                    </el-row>
+                    <el-row v-else>
+                        <el-col :span="4">&nbsp;</el-col>
+                        <el-col :span="15">
+                            <div class="block" v-if="rangeVal=='1'">
+                                <el-slider v-model="rangeValue" range :min="minVal" :max="maxVal"
+                                           @change="changeRange"></el-slider>
+                            </div>
+                            <div class="block" v-else-if="rangeVal=='2'">
+                                <el-slider v-model="rangeValueL" :min="minVal" :max="maxVal"
+                                           @change="changeRange"></el-slider>
+                            </div>
+                            <div class="block" v-else>
+                                <el-slider v-model="rangeValueR" :min="minVal" :max="maxVal"
+                                           @change="changeRange"></el-slider>
+                            </div>
+                        </el-col>
+                        <el-col :span="5">&nbsp;</el-col>
+                    </el-row>
+                </div>
+                <div class="modal-body" style="text-align: center;" v-else>
+                    <el-row>
+                        <el-col :span="13">
+                            <el-tabs v-model="activeName" class="modal-lists">
+                                <el-tab-pane label="列表筛选" name="first">
+                                    <el-row>
+                                        <el-col :span="6">&nbsp;</el-col>
+                                        <el-col :span="12" style="text-align:center;">
+                                            <el-radio v-model="listRadio" label="1" @change="changeListRadio">列表
+                                            </el-radio>
+                                            <el-radio v-model="listRadio" label="2" @change="changeListRadio">手动
+                                            </el-radio>
+                                        </el-col>
+                                        <el-col :span="6" style="padding-right:10px;" v-if="listRadioOrderStatus">
+                                            <div v-if="listRadioOrderAsc" class="modal-list-icon" @click="orderClick"><i
+                                                    class="fa fa-fw" aria-hidden="true" title="升序">&#xf160;</i></div>
+                                            <div class="modal-list-icon" @click="orderClick" v-else><i class="fa fa-fw"
+                                                                                                       aria-hidden="true"
+                                                                                                       title="降序">&#xf161;</i>
+                                            </div>
+                                        </el-col>
+                                        <el-col :span="6" v-else>&nbsp;</el-col>
+                                    </el-row>
+                                    <el-row v-if="listRadioOrderStatus">
+                                        <el-col :span="1"></el-col>
+                                        <el-col :span="23">
+                                            <el-input type="text" placeholder="请输入内容" prefix-icon="el-icon-search"
+                                                      v-model="searchColumnData" size="mini"></el-input>
+                                        </el-col>
+                                        <el-col :span="24" class="modal-list-max-height">
+                                            <div v-for="(item,index) in columnData.filter(data => !searchColumnData || data.VAL.toLowerCase().includes(searchColumnData.toLowerCase()))">
+                                                <el-row>
+                                                    <el-col :span="1">&nbsp;</el-col>
+                                                    <el-col :span="22">
+                                                        <el-checkbox-group v-model="checkList">
+                                                            <div :class="['modal-list-col-item',index==hoverIndex?'hoverBg':'']"
+                                                                 @mouseover="hoverIndex = index"
+                                                                 @mouseout="hoverIndex = -1">
+                                                                <el-checkbox :label="item.VAL"
+                                                                             @change="checkVal(index)"></el-checkbox>
+                                                            </div>
+                                                        </el-checkbox-group>
+                                                    </el-col>
+                                                    <el-col :span="1">&nbsp;</el-col>
+                                                </el-row>
+                                            </div>
+                                        </el-col>
+                                        <el-col :span="24" style="text-align:left;margin-top:10px;">
+                                            <el-radio-group v-model="operateRadio" @change="operateRadioChange">
+                                                <el-radio label="in">包含</el-radio>
+                                                <el-radio label="notin">排除</el-radio>
+                                                <el-radio label="all">全部</el-radio>
+                                            </el-radio-group>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row v-else>
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="22">
+                                            <el-input placeholder="输入您要添加的项" v-model="addVal" size="mini">
+                                                <i slot="suffix" class="el-input__icon el-icon-plus"
+                                                   @click="addInputVal"></i>
+                                            </el-input>
+                                        </el-col>
+                                        <el-col :span="24" class="modal-list-max-height modal-list-defiend">
+                                            <div v-for="(item,index) in definedData">
+                                                <el-row>
+                                                    <el-col :span="1">&nbsp;</el-col>
+                                                    <el-col :span="22">
+                                                        <div :class="['modal-list-col-item2',index==hoverIndex?'hoverBg':'']"
+                                                             @mouseover="hoverIndex = index"
+                                                             @mouseout="hoverIndex = -1">
+                                                            <el-row>
+                                                                <el-col :span="12">{{item.VAL}}</el-col>
+                                                                <el-col :span="12" style="text-align:right;"><i
+                                                                        class="el-icon-close" title="删除"
+                                                                        style="cursor: pointer;"
+                                                                        @click="delInputVal(index)"></i></el-col>
+                                                            </el-row>
+                                                        </div>
+                                                    </el-col>
+                                                    <el-col :span="1">&nbsp;</el-col>
+                                                </el-row>
+                                            </div>
+                                        </el-col>
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="12" style="text-align:left;margin-top:10px;">
+                                            <el-checkbox v-model="operateChecked" @change="operateCheckedChange">排除
+                                            </el-checkbox>
+                                        </el-col>
+                                    </el-row>
+                                </el-tab-pane>
+                                <el-tab-pane label="文本筛选" name="second">
+                                    <el-row style="padding:5px 8px;">
+                                        <el-col :span="12">
+                                            <el-select v-model="topSelectVal" placeholder="请选择" size="small"
+                                                       @change="andOrChange">
+                                                <el-option
+                                                        v-for="item in topOptions"
+                                                        :key="item.key"
+                                                        :label="item.text"
+                                                        :value="item.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row v-for="(item,index) in contentTexts" style="padding:5px 0;">
+                                        <el-col :span="11">
+                                            <el-select v-model="item.key" placeholder="请选择" size="mini"
+                                                       @change="andOrChange">
+                                                <el-option v-for="opt in bodyOptions" :key="opt.key" :label="opt.text"
+                                                           :value="opt.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                        <el-col :span="11">
+                                            <el-input v-model="item.text" size="mini" @change="andOrChange"></el-input>
+                                        </el-col>
+                                        <el-col :span="2"><i class="el-icon-delete" title="删除"
+                                                             style="font-size:16px;padding-top:6px;cursor: pointer;"
+                                                             @click="delSelectInput(index)"></i></el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="12">
+                                            <div style="text-align:left;padding:5px 8px;" v-if="contentTexts.length<8">
+                                                <el-button type="primary" plain size="small" @click="addSelectInput">
+                                                    添加
+                                                </el-button>
+                                            </div>
+                                        </el-col>
+                                    </el-row>
+                                </el-tab-pane>
+                                <el-tab-pane label="条件筛选" name="third">
+                                    <el-row>
+                                        <el-col :span="24">按照
+                                            <el-select v-model="measureColumnName" placeholder="请选择" size="mini" @change="measureColumnChange">
+                                                <el-option v-for="item in measures"
+                                                           :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME"
+                                                           :value="item.COLUMN_NAME">
+                                                </el-option>
+                                            </el-select>
+                                            的
+                                            <el-select v-model="countMethodKey" size="mini" @change="conditionFilterChange">
+                                                <el-option v-for="item in countMethodList" :key="item.key"
+                                                           :label="item.text" :value="item.key" ></el-option>
+                                            </el-select>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row v-if="rangeShowFlag">
+                                        <el-col :span="24">
+                                            <div style="margin:10px 0;height:50px;line-height: 50px;background-color: #fafafa;border: 1px solid #efefef;">
+                                                <el-button type="primary" size="mini" @click="showRange(false)">加载范围
+                                                </el-button>
+                                            </div>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row v-if="!rangeShowFlag">
+                                        <el-col :span="24">
+                                            <div style="margin:10px 0;border: 1px solid #efefef;" class="conditionfilter">
+                                                <el-form :label-position="labelPosition" label-width="60px" disabled="true" :model="conditionFilter">
+                                                    <el-form-item label="最大值:">
+                                                        <el-input v-model="conditionFilter.MAX"></el-input>
+                                                    </el-form-item>
+                                                    <el-form-item label="最小值:">
+                                                        <el-input v-model="conditionFilter.MIN"></el-input>
+                                                    </el-form-item>
+                                                </el-form>
+                                            </div>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="11">
+                                            <el-select v-model="operateKey" placeholder="请选择" size="mini" @change="conditionFilterChange">
+                                                <el-option v-for="opt in operates" :key="opt.key" :label="opt.text"
+                                                           :value="opt.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                        <el-col :span="11">
+                                            <el-input v-model="operateVal" size="mini" @change="conditionFilterChange" placeholder="请输入数字"></el-input>
+                                        </el-col>
+                                        <el-col :span="2">&nbsp;</el-col>
+                                    </el-row>
+                                </el-tab-pane>
+                                <el-tab-pane label="高级筛选" name="fourth">
+                                    <el-row>
+                                        <el-col :span="24">按照
+                                            <el-select v-model="measureColumnNameHigh" placeholder="请选择" size="mini" @change="measureColumnHighChange">
+                                                <el-option v-for="item in measures"
+                                                           :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME"
+                                                           :value="item.COLUMN_NAME">
+                                                </el-option>
+                                            </el-select>
+                                            的
+                                            <el-select v-model="countMethodKeyHigh" size="mini" @change="measureColumnHighConditionChange">
+                                                <el-option v-for="item in countMethodList" :key="item.key"
+                                                           :label="item.text" :value="item.key"></el-option>
+                                            </el-select>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>&nbsp;</el-row>
+
+                                    <el-row>
+                                        <el-col :span="11">
+                                            <el-select v-model="operateHighKey" placeholder="请选择" size="mini" @change="measureColumnHighConditionChange">
+                                                <el-option v-for="opt in operateMaxAndMin" :key="opt.key" :label="opt.text"
+                                                           :value="opt.key">
+                                                </el-option>
+                                            </el-select>
+                                        </el-col>
+                                        <el-col :span="11">
+                                            <el-input v-model="operateHighVal" size="mini" @change="measureColumnHighConditionChange"></el-input>
+                                        </el-col>
+                                        <el-col :span="2">&nbsp;个</el-col>
+                                    </el-row>
+                                </el-tab-pane>
+                            </el-tabs>
+                        </el-col>
+                        <el-col :span="1">&nbsp;</el-col>
+                        <el-col :span="10">
+                            <el-row style="height:40px;line-height: 40px;display:inline-block;font-size: 14px;font-weight: 500;position: relative;">
+                                <el-col :span="24">筛选汇总</el-col>
+                            </el-row>
+                            <el-row style="background:#f5f5f5;text-align:left;">
+                                <el-col :span="2">&nbsp;</el-col>
+                                <el-col :span="20">
+                                    <el-row>&nbsp;</el-row>
+                                    <el-row class="dim-row-padding]">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="6">所选字段:</el-col>
+                                        <el-col :span="17">1</el-col>
+                                    </el-row>
+                                    <el-row :class="['dim-row-padding',activeName=='first'?'dim-row-active':'']">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="6">列表筛选:</el-col>
+                                        <el-col :span="17">{{listItemText}}</el-col>
+                                    </el-row>
+                                    <el-row :class="['dim-row-padding',activeName=='second'?'dim-row-active':'']">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="6">文本筛选:</el-col>
+                                        <el-col :span="17">{{installContentText}}</el-col>
+                                    </el-row>
+                                    <el-row :class="['dim-row-padding',activeName=='third'?'dim-row-active':'']">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="6">条件筛选:</el-col>
+                                        <el-col :span="17">{{termsText}}</el-col>
+                                    </el-row>
+                                    <el-row :class="['dim-row-padding',activeName=='fourth'?'dim-row-active':'']">
+                                        <el-col :span="1">&nbsp;</el-col>
+                                        <el-col :span="6">高级筛选:</el-col>
+                                        <el-col :span="17">{{highConditionFilterText}}</el-col>
+                                    </el-row>
+                                    <el-row>&nbsp;</el-row>
+                                </el-col>
+                                <el-col :span="2">&nbsp;</el-col>
+                            </el-row>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div class="modal-footer" style="text-align: center;">
+                    <el-button type="primary" class="btn btn-primary" data-dismiss="modal" @click="doSaveModal">确认
+                    </el-button>
+                    <el-button type="button" class="btn btn-default" data-dismiss="modal" @click="doCancelModal">取消
+                    </el-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="calcuteModal" tabindex="-1" role="dialog" aria-labelledby="myFilterModalLabel"
+         data-backdrop="static">
+        <div :class="'modal-dialog-small'" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalLabel1">聚合方式({{dialogTitle}})</h4>
+                </div>
+                <div class="modal-body" style="text-align: center;">
+                    <el-row>
+                        <el-col :span="24">
+                            <el-radio-group v-model="countMethod" @change="changeCalculType">
+                                <el-radio :label="item.key" v-for="(item,index) in countMethodList">{{item.text}}</el-radio>
+                                <!--<el-radio label="1">求和</el-radio>-->
+                                <!--<el-radio label="2">求平均</el-radio>-->
+                                <!--<el-radio label="3">最大值</el-radio>-->
+                                <!--<el-radio label="4">最小值</el-radio>-->
+                            </el-radio-group>
+                        </el-col>
+                    </el-row>
+
+                </div>
+                <div class="modal-footer" style="text-align: center;">
+                    <el-button type="primary" class="btn btn-primary" data-dismiss="modal" @click="doSaveCalcultType">
+                        确认
+                    </el-button>
+                    <el-button type="button" class="btn btn-default" data-dismiss="modal" @click="doCancelModal">取消
+                    </el-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-show="measureRightMenuVisible">
+        <ul id="measureRightMenu" class="right_menu">
+            <li class="right_menu_item" @click="openCountMethod">聚合方式</li>
+        </ul>
+    </div>
+</div>
+<script type="text/javascript">
+    //这里的js代码要整合:接口的url之类的要放到配置文件中
+    var dataModelVue;
+    $(function () {
+        $.getScript('js/datamodedraw.js');
+        dataModelVue = new Vue({
+            el: '#dataModelapp',
+            data: {
+                searchKey:'',
+                dataModelPanelH: (vm.setContextPanelH.substr(0, vm.setContextPanelH.indexOf('px')) - 40) + 'px',
+                currentPage: 1,
+
+                measureRightMenuVisible: false,//度量右键菜单
+                optionItem: {},//用来记录正在操作的度量对象
+                measureItemCalcultation: {},//用来存储临时操作度量及其统计方式
+                countMethod: '1',
+                measuresSeted: [],//已经设置过的统计方式信息，共数据回显的时候用
+                modelItem: {},
+                countMethodList:[
+                    {key: '1', text: '求和'},
+                    {key: '2', text: '求平均'},
+                    {key: '3', text: '求最大'},
+                    {key: '4', text: '求最小'}
+                ],
+                rangeShowFlag:true,//加载范围按钮显隐标识
+                labelPosition: 'right',
+                conditionFilter:{
+                    MAX:0,
+                    MIN:0,
+                },
+                measureColumnRNameHigh : '',
+                highConditionFilterText:'',
+                conditionsSeted: [],//已经设置过的数据过滤的组件，共数据回显的时候用
+                rangeValArrs:[],//用于多度量时，存储范围，最大值最小值，供数据回显的时候用
+                meauConditionParams:[],
+                optionIngItemName:{},
+
+
+
+                pageSize: 15,
+                totalCount: 0,
+                prevText: '上一页',
+                nextText: '下一页',
+                pageFlag: false,
+                defaultText: '请选择数据明细',
+                changeModelText: '已选中模型:',
+                mouseoverTip: '设置维度和度量',
+                dimensionName: '维度',
+                measureName: '度量',
+                activeNames: ['dimension-selected', 'measure-selected', 'measure-selected2', 'filter-selected', 'orderBy'],
+                selectedColumnList: [{
+                    title: '已选维度',
+                    name: 'dimension-selected',
+                    display: true
+                }, {
+                    title: '已选度量',
+                    name: 'measure-selected',
+                    display: true,
+                }, {
+                    title: 'Y右轴',
+                    name: 'measure-selected2',
+                    display: false,
+                }, {
+                    title: '数据筛选',
+                    name: 'filter-selected',
+                    display: true
+                }, {
+                    title: '排序',
+                    name: 'orderBy',
+                    display: true
+                }],
+                trDisplay: true,
+                dataModelList: [],
+                dimensions: [],
+                measures: [],
+                dataModelId: '',
+
+                rangeVal: '1',
+                rangeValL: '请输入最小值',
+                rangeValR: '请输入最大值',
+                tempRangeValL:'',
+                tempRangeValR:'',
+                rangeLStatus: false,
+                rangeRStatus: false,
+                miniModal: false,//true度量  false  维度
+                columnNameFilter: '',
+                dialogTitle: '度量',
+
+                rangeValue: [, ],
+                rangeValueL: 1,
+                rangeValueR: 100,
+                minVal: 1,
+                maxVal: 100,
+                loadRangeStatus: false,
+
+
+                activeName: 'first',
+                listRadio: '2',
+                listRadioOrderStatus: false,
+                listRadioOrderAsc: true,
+                columnData: [{VAL: '江西'}, {VAL: '上海'}, {VAL: '北京'}, {VAL: '黑龙江'}, {VAL: '新疆'}, {VAL: '湖南'}, {VAL: '湖北'}, {VAL: '四川'}, {VAL: '东北'}, {VAL: '山东'}],
+                searchColumnData: '',
+                hoverIndex: -1,
+                operateRadio: 'in',
+                operateChecked: false,
+                definedData: [],
+                checkList: [],
+
+                listItemText: '无',
+                addVal: '',
+
+                installContentText: '无',
+                topSelectVal: '1',
+                topOptions: [{key: '1', text: '包含以下所有条件'}, {key: '2', text: '包含以下任意条件'}],
+                bodyOptions: [
+                    {key: '1', text: '包含'},
+                    {key: '2', text: '开头是'},
+                    {key: '3', text: '结尾是'},
+                    {key: '4', text: '不包含'},
+                    {key: '5', text: '等于'}
+                ],
+                contentTexts: [],
+
+                termsText: '无',
+                measureColumnName: '',
+                measureColumnRName: '',
+                countMethodKey: '1',
+                countMethodNames: [
+                    {key: '1', text: '求和'},
+                    {key: '2', text: '平均值'},
+                    {key: '3', text: '计数'},
+                    {key: '4', text: '去重计数'},
+                    {key: '5', text: '最大值'},
+                    {key: '6', text: '最小值'},
+                    {key: '7', text: '属性'}
+                ],
+                operateVal: '',
+                operateKey: '1',
+                operates: [
+                    {key: '1', text: '大于等于'},
+                    {key: '2', text: '大于'},
+                    {key: '3', text: '等于'},
+                    {key: '4', text: '小于等于'},
+                    {key: '5', text: '小于'},
+                    {key: '6', text: '不等于'}
+                ],
+
+                measureColumnNameHigh: '',
+                countMethodKeyHigh: '1',
+                operateHighKey: '1',
+                operateHighVal: '',
+                operateMaxAndMin: [
+                    {key: '1', text: '最大'},
+                    {key: '2', text: '最小'}
+                ],
+
+                conditionObjs: [],
+                conditions: [],
+                //排序相关
+                orderByDisable: true,
+                orderByCol: '',
+                orderByType: '',
+                orderByColRname: '',
+                orderByColCode: '',
+                orderByColTemp: '',//排序借助中间变量
+                orderByCols: [
+                    {key: '', text: '请选择', code: ''}
+                ],
+                orderByTypes: [
+                    {key: '', text: '无'},
+                    {key: 'ASC', text: '升序'},
+                    {key: 'DESC', text: '降序'},
+                ]
+
+
+            },
+            created: function () {
+                var containerId = selectChartWidget.attr('id');
+                var dataModelSet = charts[containerId].config.dataModelSet;
+                var tempModelId = dataModelSet.id;
+                if (tempModelId && "" != tempModelId) {
+                    this.queryDataModelInfo(tempModelId);
+                }
+                var pageNum = 1;
+                if (dataModelSet.pageNum != '' && dataModelSet.pageNum != undefined) {
+                    pageNum = dataModelSet.pageNum;
+                }
+                this.currentPage = pageNum;
+                this.dealModelData('dataModelList', null, null, pageNum);
+                this.dealEl();
+                this.initOrderByOpt();
+            },
+            methods: {
+                //初始化排序内容
+                initOrderByOpt: function (dim_mea) {//记得数据回填
+                    //清空已经选中的值，以防出现已经选中的维度或度量被删除之后还是处于选中状态
+                    if (this.orderByCol != '') {
+                        this.orderByCol = '';
+                    }
+                    if (this.orderByType != '') {
+                        this.orderByType = '';
+                    }
+                    //添加之前先清空数据，以防重复添加
+                    if (this.orderByCols.length > 1) {
+                        this.orderByCols = [{key: '', text: '请选择', code: ''}];
+                    }
+                    var chart = charts[selectChartWidget.attr('id')];
+                    var dataModelSet = dim_mea || chart.config.dataModelSet;
+                    var chartType = selectChartWidget.attr('chart-type');
+                    if (!$.isEmptyObject(dataModelSet)) {
+                        var dimensions = dataModelSet.dimensions || [];
+                        var measures = dataModelSet.measures || [];
+                        var setOptionsFlag = false;
+                        if (chartType == 'icon' || chartType == 'dynamicNum' || chartType == 'carouselTable') {
+                            if (chartType == 'carouselTable' && (dimensions.length > 0 || measures.length > 0)) {
+                                setOptionsFlag = true;
+                            }
+                            if (chartType == 'icon' && dimensions.length > 0 && measures.length > 0) {
+                                setOptionsFlag = true;
+                            }
+                            if (chartType == 'dynamicNum' && measures.length > 0) {
+                                setOptionsFlag = true;
+                            }
+                        } else {
+                            if (chartType == 'bar' || chartType == 'barCapsule' || chartType == 'line' || chartType == 'lineArea' || chartType == 'pie' || chartType == 'doubleAxis') {
+                                if (dimensions.length > 0 && measures.length > 0) {
+                                    setOptionsFlag = true;
+                                }
+                            }
+                            if (chartType == 'pieSingleValue' || chartType == 'gauge') {
+                                if (measures.length > 0) {
+                                    setOptionsFlag = true;
+                                }
+                            }
+                        }
+                    }
+                    if (setOptionsFlag) {
+                        var dimMeas = [];
+                        if (!$.isEmptyObject(dimensions)) {
+                            dimMeas = dimMeas.concat(dimensions);
+                        }
+                        if (!$.isEmptyObject(measures)) {
+                            this.initCountMethodHtml(measures);
+                            dimMeas = dimMeas.concat(measures);
+                        }
+                        if (dimMeas.length > 0) {
+                            for (var i = 0; i < dimMeas.length; i++) {
+                                var dimMea = dimMeas[i];
+                                this.orderByCols.push({
+                                    key: dimMea.COLUMN_NAME,
+                                    text: dimMea.COLUMN_RNAME,
+                                    code: dimMea.COLUMN_ORIGINAL_NAME,
+                                })
+                            }
+                        }
+                    } else {
+                        charts[selectChartWidget.attr('id')].config.dataModelSet.orderBy = {};
+                    }
+                    if (this.orderByCols.length > 1) {
+                        this.orderByDisable = false;
+                    } else {
+                        this.orderByDisable = true;
+                    }
+                    //初始化排序设置
+                    var orderBySet = charts[selectChartWidget.attr('id')].config.dataModelSet.orderBy;
+                    if (!$.isEmptyObject(orderBySet)) {
+                        this.orderByCol = orderBySet.orderByCol;
+                        this.orderByType = orderBySet.orderByType;
+                        this.orderByColRname = orderBySet.orderByColRname;
+                    }
+
+                },
+                /**
+                 * 数据回填时，将信息存储全局变量中，当点击统计方式时，循环判断显示
+                 */
+                initCountMethodHtml: function (measures) {
+                    var measuresSeted = [];
+                    if (measures && measures.length > 0) {
+                        for (var meaIndex = 0; meaIndex < measures.length; meaIndex++) {
+                            var meaItem = measures[meaIndex];
+                            var tempCountItem = {};
+                            tempCountItem.code = meaItem.COLUMN_ORIGINAL_NAME;
+                            tempCountItem.rname = meaItem.COLUMN_RNAME;
+                            tempCountItem.countIndex = meaItem.COUNT_METHOD || "1";
+                            measuresSeted.push(tempCountItem);
+                        }
+                    }
+                    if (measuresSeted.length > 0) {
+                        this.measuresSeted = measuresSeted;
+
+                    }
+                },
+                initDataFilterHtml:function () {
+                    if(this.measures && this.measures.length>0){
+                        //文本筛选
+                        if(!this.measureColumnName && ""==this.measureColumnName){
+                            this.measureColumnName = this.measures[0].COLUMN_NAME;
+                            this.measureColumnRName = this.measures[0].COLUMN_RENAME;
+                        }
+                        if(!this.measureColumnNameHigh && ""== this.measureColumnNameHigh){
+                            //高级筛选
+                            this.measureColumnNameHigh = this.measures[0].COLUMN_NAME;
+                            this.measureColumnRNameHigh = this.measures[0].COLUMN_RENAME;
+                        }
+
+                    }
+                },
+                measureColumnChange :function () {
+                    this.rangeShowFlag = true;
+                    if(this.measures && this.measures.length>0){
+                        for(var sindex=0;sindex<this.measures.length;sindex++){
+                            if(this.measures[sindex].COLUMN_NAME == this.measureColumnName){
+                                this.measureColumnRName = this.measures[sindex].COLUMN_RENAME;
+                            }
+                        }
+                    }
+                    this.conditionFilterChange();
+                },
+                conditionFilterChange : function () {
+                    this.rangeShowFlag = true;
+                    var vals = [];
+                    var operate = '';
+                    var operateText = '';
+                    var operateSymbol = '';
+                    var expressConditionFilter = "";
+                    var expressConditionFilterText = "";
+                    if(this.operateVal == 0 ||this.operateVal == ""){
+                        this.removeCondition('3');
+                        this.termsText = '无';
+                    }
+                    if(this.operateKey && this.operateVal){
+                        var rangResult = this.transformCountMethodExpress(this.countMethodKey);
+                        if(rangResult && rangResult.express && rangResult.expressText){
+                            expressConditionFilter = rangResult.express;
+                            expressConditionFilterText = rangResult.expressText;
+                        }
+                        vals = [this.operateVal];
+
+                        switch (this.operateKey) {
+                            case "1":
+                                operate = 'ge';
+                                operateText = '大于等于';
+                                operateSymbol = '>=';
+                                break;
+                            case "2":
+                                operate = 'gt';
+                                operateText = '大于';
+                                operateSymbol = '>';
+                                break;
+                            case "3":
+                                operate = 'eq';
+                                operateText = '等于';
+                                operateSymbol = '=';
+                                break;
+                            case "4":
+                                operate = 'le';
+                                operateText = '小于等于';
+                                operateSymbol = '<=';
+                                break;
+                            case "5":
+                                operate = 'lt';
+                                operateText = '小于';
+                                operateSymbol = '<';
+                                break;
+                            case "6":
+                                operate = 'ne';
+                                operateText = '不等于';
+                                operateSymbol = '!=';
+                                break;
+                            default:
+                                operate = 'ge';
+                                operateText = '大于等于';
+                                operateSymbol = '>=';
+                        }
+                        var params = [{
+                            name: expressConditionFilter+'(' + this.measureColumnName+')',
+                            operator: operate,
+                            measureColumnRName:this.measureColumnRName,
+                            type: 'd',
+                            value: vals
+                        }];
+                        this.termsText = expressConditionFilterText+'('+this.measureColumnRName+')'+operateSymbol+this.operateVal;
+                        this.installCondition('3', params);
+                    }
+
+                },
+                orderByChange: function () {
+                    var orderByColOption = this.orderByCols.find((element) => (element.key == this.orderByCol));
+                    this.orderByColRname = orderByColOption.text;
+                    this.orderByColCode = orderByColOption.code;
+                    this.orderByColTemp = this.orderByCol;
+                    var dataModelSetCfg = charts[selectChartWidget.attr('id')].config.dataModelSet;
+                    dataModelSetCfg.orderBy = {
+                        orderByCol: this.orderByCol,
+                        orderByType: this.orderByType,
+                        orderByColRname: this.orderByColRname,
+                    }
+                    dataModelSetCfg.conditions = this.conditions;
+                    createChartByData(dataModelSetCfg);
+                },
+                doSaveCalcultType: function () {
+                    this.orderByType = "无";
+                    this.orderByCol = "请选择";
+                    this.hanleMeasureParamWithCountMethod();
+                    //组装数据并生成图表
+                    var tempDim_mea = charts[selectChartWidget.attr('id')].config.dataModelSet;
+                    dataModelVue.initOrderByOpt(tempDim_mea);
+                    createChartByDataAfterCountMethod(tempDim_mea);
+                    dataModelVue.setMeauNameShow();
+
+                },
+                setMeauNameShow:function () {
+                    var resultExpress = this.transformCountMethodExpress(this.countMethod);
+                    var tempName = '';
+                    if(resultExpress){
+                        tempName = resultExpress.expressText+'('+this.optionItem.columnRname+')';
+                    }
+                    $(measureSelected).children().text(tempName);
+                },
+                hanleMeasureParamWithCountMethod: function () {
+                    var tempMeasureData = this.optionItem.measureItem;
+                    var express = "";
+                    var countMethodIndex = "";
+                    var originalName = "";
+                    var columnName = "";
+                    var measureColName = "";
+                    if (tempMeasureData.length > 0) {
+                        for (var indexMea = 0; indexMea < tempMeasureData.length; indexMea++) {
+                            if (this.optionItem.columnName == tempMeasureData[indexMea].COLUMN_ORIGINAL_NAME) {
+                                measureColName = tempMeasureData[indexMea].COLUMN_ORIGINAL_NAME;
+                                if (this.countMethod) {
+                                    var resultExpress = this.transformCountMethodExpress(this.countMethod);
+                                    if(resultExpress && resultExpress.express && resultExpress.countMethodIndex){
+                                        originalName = resultExpress.express + "(" + measureColName + ")";
+                                        columnName = resultExpress.express + "_" + measureColName;
+                                        countMethodIndex = resultExpress.countMethodIndex;
+                                    }
+                                }
+                                tempMeasureData[indexMea].ORIGINAL_NAME = originalName;
+                                tempMeasureData[indexMea].COLUMN_NAME = columnName;
+                                tempMeasureData[indexMea].COUNT_METHOD = countMethodIndex;
+                            }
+                        }
+                    }
+                },
+                transformCountMethodExpress : function (countMethodNum) {
+                    var resultTemp = {};
+                    var express = "";
+                    var expressText = "";
+                    var countMethodIndex = "";
+                    if (countMethodNum) {
+                        switch (countMethodNum) {
+                            case "1":
+                                express = "SUM";
+                                expressText = '求和';
+                                countMethodIndex = "1";
+                                break;
+                            case "2":
+                                express = "AVG";
+                                expressText = '求平均';
+                                countMethodIndex = "2";
+                                break;
+                            case "3":
+                                express = "MAX";
+                                expressText = '求最大';
+                                countMethodIndex = "3";
+                                break;
+                            case "4":
+                                express = "MIN";
+                                expressText = '求最小';
+                                countMethodIndex = "4";
+                                break;
+                            default:
+                                express = "SUM";
+                                expressText = '求和';
+                                countMethodIndex = "1";
+                        }
+                        resultTemp.express = express;
+                        resultTemp.countMethodIndex = countMethodIndex;
+                        resultTemp.expressText = expressText;
+                    }
+                    return resultTemp;
+                },
+
+                changeCalculType: function (calculateType) {
+                    this.measureItemCalcultation["initFlag"] = true;
+                    this.measureItemCalcultation["measureCountMethod"] = this.countMethod;
+                    charts[selectChartWidget.attr('id')].config.dataModelSet.orderBy = {};
+                },
+                removeOrderBy: function (item) {
+                    var chartOrderBy = charts[selectChartWidget.attr('id')].config.dataModelSet.orderBy;
+                    if (!$.isEmptyObject(chartOrderBy)) {
+                        var orderByColRnameCfg = chartOrderBy.orderByColRname;
+                        if (orderByColRnameCfg == item.attr('column_rname')) {
+                            charts[selectChartWidget.attr('id')].config.dataModelSet.orderBy = {};
+                        }
+                    }
+                },
+                //打开模态框
+                openClick: function (isMini, columnItem) {
+                    var me  = this;
+                    if (isMini === 'mini') {//打开不同的模态框，初始化不同的页面数据   度量
+                        this.miniModal = true;
+                        me.loadRangeStatus = false;
+                        me.optionIngItemName = columnItem.columnName;
+
+                    } else {//维度
+                        this.miniModal = false;
+                        //初始化数据刷选列表刷选列表项
+                    }
+                    this.columnNameFilter = columnItem.columnName;
+                    this.dialogTitle = columnItem.columnRname;
+                    this.initCondition(this.miniModal,columnItem);
+                    $('#filterModal').modal();
+                    $('#filterModal').on('hidden.bs.modal', function (e) {
+                        me.activeName= 'first';
+                        me.rangeValL = me.tempRangeValL ;
+                        me.rangeValR = me.tempRangeValR ;
+                        me.rangeShowFlag = true;
+                    })
+                },
+                /**
+                 * colName  查询列
+                 * modelId 需要查询的具体表
+                 * 将点击的维度 以及维度所在表传入后端，以便查出具体地维度数据项
+                 * */
+
+                DataFilterListFilter: function (columnItem) {
+                    if(columnItem && columnItem.columnName && columnItem.modelId){
+                        var me  = this;
+                        var listFilterData = {};
+                        listFilterData.modelId = columnItem.modelId;
+                        listFilterData.colName = columnItem.columnName;
+                        var jsonDataList = {
+                            httpMethod: 'POST',
+                            url: configpre.api_getColnameData,
+                            data: JSON.stringify(listFilterData),
+                        }
+                        ajaxrequestasync(jsonDataList, function (code, msg, json) {
+                            if (code == '200') {
+                                me.columnData =  json.body;
+
+
+                            }
+                        });
+                    };
+                },
+                //初始化查询条件-逻辑待完善
+                initCondition: function (isMini,columnItem) {
+                    this.conditions = charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditions'] || [];
+                    this.conditionObjs = charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditionObjs'] || [];
+                    if (isMini) {
+                        this.initMiniModalParams(columnItem);
+                    } else {
+                        this.initNomalModalParams(columnItem);
+                    }
+                },
+                initConditionParamAfterSelectWidget: function () {
+                    this.conditions = charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditions'] || [];
+                    this.conditionObjs = charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditionObjs'] || [];
+                },
+
+                changeRangeType: function () {
+                    if (this.rangeVal == '1') {
+                        this.rangeLStatus = false;
+                        this.rangeRStatus = false;
+                        // this.rangeValue = [this.minVal, this.maxVal];
+                        this.rangeValL = this.minVal;
+                        this.rangeValR = this.maxVal;
+                        if(this.rangeValue && this.rangeValue.length==2){
+                            this.rangeValL =  this.rangeValue[0];
+                            this.rangeValR =  this.rangeValue[1];
+                        }
+                    } else if (this.rangeVal == '2') {
+                        this.rangeLStatus = false;
+                        this.rangeRStatus = true;
+                        this.rangeValueL = this.minVal;
+                        this.rangeValL = this.minVal;
+                        if(this.rangeValue && this.rangeValue.length==2){
+                            this.rangeValL =  this.rangeValue[0];
+                        }
+                        this.rangeValR = '';
+                    } else if (this.rangeVal == '3') {
+                        this.rangeLStatus = true;
+                        this.rangeRStatus = false;
+                        this.rangeValueR = this.maxVal;
+                        this.rangeValR = this.maxVal;
+                        if(this.rangeValue && this.rangeValue.length==2){
+                            this.rangeValR =  this.rangeValue[1];
+                        }
+                        this.rangeValL = '';
+
+                    }
+                },
+
+                //保存模态框内容
+                doSaveModal: function () {
+                    //this.miniModal=false;
+                    var me = this;
+                    if (this.miniModal) {
+                        var operate = '';
+                        var vals;
+                        if (this.rangeVal == '1') {
+                            operate = 'between';
+                            // me.tempRangeValL = this.rangeValL;
+                            // me.tempRangeValR =this.rangeValR;
+                            vals = [this.rangeValL, this.rangeValR];
+                        } else if (this.rangeVal == '2') {
+                            operate = 'ge';
+                            vals = [this.rangeValL];
+                            // me.tempRangeValL = this.rangeValL;
+                        } else {
+                            operate = 'le';
+                            vals = [this.rangeValR];
+                            // me.tempRangeValR =this.rangeValR;
+                        }
+                        var meauOpExpress = this.transformCountMethodExpress(this.countMethod);
+                        var objItem = {
+                            name: meauOpExpress.express +'('+ this.columnNameFilter+')',
+                            operator: operate,
+                            type: 'd',
+                            value: vals
+                        };
+                        var tempParamsArr = [];
+                        if(this.meauConditionParams.length>0){
+                            var meauFlag = false;
+                            for(var paIndex = 0;paIndex<this.meauConditionParams.length;paIndex++){
+                                if(this.meauConditionParams[paIndex]){
+                                    if(objItem.name == this.meauConditionParams[paIndex].name){
+                                        meauFlag = true;
+                                        tempParamsArr.push(objItem);
+                                    }else {
+                                        tempParamsArr.push(this.meauConditionParams[paIndex]);
+                                    }
+                                }
+                            }
+                            if(!meauFlag){
+                                tempParamsArr.push(objItem);
+                            }
+                            this.meauConditionParams = tempParamsArr;
+                        }else {
+                            tempParamsArr.push(objItem);
+                        }
+                        if(tempParamsArr.length>0){
+                            this.installCondition('5', tempParamsArr);
+                        }
+                        // this.params.push(objItem);
+                    }
+                    var cfgs = this.queryDimRanelParams4ChartWidget();
+                    // var cfgs = this.getParams4ChartWidget();
+                    charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditions'] = this.conditions;
+                    charts[selectChartWidget.attr('id')]['config']['dataModelSet']['conditionObjs'] = this.conditionObjs;
+                    cfgs['conditions'] = this.conditions;
+                    var dataModelCfgWithFilter = charts[selectChartWidget.attr('id')].config.dataModelSet;
+                    dataModelCfgWithFilter.colNames = cfgs.cols;
+                    createChartByData(dataModelCfgWithFilter);
+                },
+
+                //取消保存模态框内容
+                doCancelModal: function () {
+                    //this.miniModal=false;
+                },
+                //加载范围触发     defaultType  true 度量触发   false 维度触发
+                showRange: function (defaultType) {
+                    if(defaultType){
+                        // this.removeCondition('5');
+                        var columnName = "";
+                        var countMethodKey = '';
+                        var flag = false;
+                        if(this.optionItem.measureItem && this.optionItem.measureItem.length>0){
+                            for(var tomIndex=0;tomIndex<this.optionItem.measureItem.length;tomIndex++){
+                                var topOptionItem = this.optionItem.measureItem[tomIndex];
+                                if(this.optionIngItemName == topOptionItem.COLUMN_ORIGINAL_NAME){
+                                    flag = true;
+                                    countMethodKey = topOptionItem.COUNT_METHOD;
+                                }
+                            }
+                        }
+                        if(!flag){
+                            countMethodKey = '1';
+                        }
+                        var rangResult = this.transformCountMethodExpress(countMethodKey);
+                        if(rangResult && rangResult.express){
+                            columnName = rangResult.express+"_"+(this.optionIngItemName );
+                            this.loadMeasureRange(columnName,defaultType,'5');
+                        }
+                    }else {
+                        this.rangeShowFlag = false;
+                        // this.removeCondition('5');
+                        var columnName = "";
+                        var rangResult = this.transformCountMethodExpress(this.countMethodKey);
+                        if(rangResult && rangResult.express){
+                            columnName = rangResult.express+"_"+(this.measureColumnName);
+                            this.loadMeasureRange(columnName,defaultType,'3');
+                        }
+                    }
+
+
+                },
+                //滑块左右滑动时触发 ，1为范围滑块，2只含左滑块，3只含右滑块
+                changeRange: function () {
+                    if (this.rangeVal == '1') {
+                        this.rangeValL = this.rangeValue[0];
+                        this.rangeValR = this.rangeValue[1];
+                    } else if (this.rangeVal == '2') {
+                        this.rangeValL = this.rangeValueL;
+                        this.rangeValR = '';
+                    } else {
+                        this.rangeValL = '';
+                        this.rangeValR = this.rangeValueR;
+                    }
+                },
+                //获取选中组件的请求参数     维度请求范围时用此方法，不管有没有选择度量，都传入后台删除最大最小
+                queryDimRanelParams4ChartWidget: function (paramIndex) {
+                    var forcusChartWidget = charts[selectChartWidget.attr('id')];
+                    if (!forcusChartWidget) {
+                        return "";
+                    }
+                    var config = forcusChartWidget.config;
+                    if (!config) {
+                        return "";
+                    }
+                    var dataModelSet = config.dataModelSet;
+                    // if (!dataModelSet) {
+                    //     return "";
+                    // }
+
+                    var tempMeasures = [];
+                    if(this.measures && this.measures.length>0){
+                        for(var tmIndex=0;tmIndex<this.measures.length;tmIndex++){
+                            for(var ctIndex = 0;ctIndex<this.countMethodList.length;ctIndex++){
+                                var tempMeasuresItem = {};
+                                var tempMeasuresResult = this.transformCountMethodExpress(this.countMethodList[ctIndex].key);
+                                tempMeasuresItem.COLUMN_DATA_TYPE = this.measures[tmIndex].COLUMN_DATA_TYPE;//number
+                                tempMeasuresItem.COLUMN_NAME = tempMeasuresResult.express+'_'+this.measures[tmIndex].COLUMN_NAME;//sum_ycl
+                                tempMeasuresItem.COLUMN_ORIGINAL_NAME = this.measures[tmIndex].COLUMN_NAME;//ycl
+                                tempMeasuresItem.COLUMN_RNAME = this.measures[tmIndex].COLUMN_RENAME;//ycl
+                                tempMeasuresItem.ORIGINAL_NAME = tempMeasuresResult.express+'('+this.measures[tmIndex].COLUMN_NAME+')';//sum(ycl)
+                                tempMeasures.push(tempMeasuresItem);
+                            }
+                        }
+                    }
+                    if(tempMeasures.length==0){
+                        return "";
+                    }
+                    var cols = [];
+                    var id = dataModelSet.id;
+                    var cfgs = {
+                        ID: dataModelSet.id,
+                        cols: cols.concat(dataModelSet.dimensions, tempMeasures),
+                        groupBy: dataModelSet.groupBy
+                    }
+                    if(this.conditions.length>0){
+                        if(paramIndex && '' != paramIndex){
+                            var tempConditionParam = this.assembleTempConditionParam(paramIndex);
+                            cfgs.conditions = tempConditionParam;
+                        }else {
+                            cfgs.conditions = this.conditions;
+                        }
+
+                    }
+                    return cfgs;
+                },
+                //获取选中组件的请求参数
+                getParams4ChartWidget: function () {
+                    var tempDim_mea = assembleDimAndMea();
+                    var forcusChartWidget = charts[selectChartWidget.attr('id')];
+                    if (!forcusChartWidget) {
+                        return "";
+                    }
+                    var config = forcusChartWidget.config;
+                    if (!config) {
+                        return "";
+                    }
+                    var dataModelSet = config.dataModelSet;
+                    if (!dataModelSet) {
+                        return "";
+                    }
+                    var cols = [];
+                    var id = dataModelSet.id;
+                    var cfgs = {
+                        ID: dataModelSet.id,
+                        cols: cols.concat(dataModelSet.dimensions, dataModelSet.measures),
+                        groupBy: dataModelSet.groupBy
+                    }
+                    if(this.conditions.length>0){
+                        cfgs.conditions = this.conditions;
+                    }
+                    return cfgs;
+                },
+                clearDimCondifitonParam:function () {
+                    this.checkList = [];
+                    this.listItemText= '';
+                    this.installContentText= '';
+                    this.termsText= '';
+                    this.highConditionFilterText= '';
+                    this. addVal= '';
+                    this.topSelectVal ='1';
+                    this.operateVal='';
+                    this.operateHighVal='';
+
+                },
+                clearMeaConditionParam:function () {
+                    this.rangeValL = '请输入最小值';
+                    this.rangeValR = '请输入最大值';
+                    this.rangeVal = '1';
+
+                },
+                //获取度量范围
+                loadMeasureRange: function (columnName,defaultType,conditionIndex) {
+                    var requestParams = this.queryDimRanelParams4ChartWidget(conditionIndex);
+                    var me = this;
+                    if (requestParams !== '') {
+                        requestParams['filters'] = columnName;
+                        var jsonDataList = {
+                            httpMethod: 'POST',
+                            url: configpre.api_getTableDataMixInfo,
+                            data: JSON.stringify(requestParams),
+                        }
+                        ajaxrequestasync(jsonDataList, function (code, msg, json) {
+                            if (code == '200') {
+                                if(defaultType){//度量
+                                    me.loadRangeStatus = true;
+
+                                    me.rangeValue[0] = json.minVal;
+                                    me.rangeValue[1] = json.maxVal;
+                                    me.rangeValueL = json.minVal;
+                                    me.rangeValueR = json.maxVal;
+                                    me.minVal = json.minVal;
+                                    me.maxVal = json.maxVal;
+                                    me.rangeValL = json.minVal;
+                                    me.rangeValR = json.maxVal;
+
+
+                                    if(me.rangeVal == '2'){
+                                        me.rangeValR = '';
+                                    }else if(me.rangeVal == '3'){
+                                        me.rangeValL = '';
+                                    }
+                                }else {//维度
+                                    if(json.maxVal && ""!= json.maxVal){
+                                        me.conditionFilter.MAX = json.maxVal;
+                                    }if(json.minVal && ""!= json.minVal){
+                                        me.conditionFilter.MIN = json.minVal;
+                                    }
+                                }
+
+                            }
+                        });
+                    }
+                },
+                //输入框数字验证
+                numberCheck: function (leftOrRight) {
+                    if (leftOrRight === 'left') {
+                        this.rangeValL = this.rangeValL.replace(/[^\.\d]/g, '');
+                        this.rangeValL = this.rangeValL.replace('.', '');
+                    } else if (leftOrRight === 'right') {
+                        this.rangeValR = this.rangeValR.replace(/[^\.\d]/g, '');
+                        this.rangeValR = this.rangeValR.replace('.', '');
+                    }
+                },
+
+                //列表or手动，切换radio时触发
+                changeListRadio: function () {
+                    if (this.listRadio == '1') {
+                        this.listRadioOrderStatus = true;
+                        this.checkList = [];
+                        this.listItemText = '无';
+                        this.removeCondition('1');
+                    } else {
+                        this.removeCondition('1');
+                        this.listItemText = '无';
+                        this.listRadioOrderStatus = false;
+                        if (this.definedData.length > 0) {
+                            this.inOrOutInputVal();
+                        }
+                    }
+                },
+                //排序：升序or降序
+                orderClick: function () {
+                    var me = this;
+                    this.listRadioOrderAsc = !this.listRadioOrderAsc;
+                    this.columnData.sort(function (item1, item2) {
+                        var VAL1 = item1.VAL;
+                        var VAL2 = item2.VAL;
+                        if (me.listRadioOrderAsc) {
+                            return VAL1.localeCompare(VAL2, 'zh');
+                        } else {
+                            return VAL2.localeCompare(VAL1, 'zh');
+                        }
+                    });
+                    if (this.operateRadio != 'all') {
+                        this.checkList = [];
+                        this.listItemText = '无';
+                    }
+                    this.removeCondition('1');
+                },
+                checkVal: function (index) {
+                    var operateRadio = '';
+                    if (this.operateRadio == 'in') {
+                        operateRadio = '包含';
+                    } else if (this.operateRadio == 'notin') {
+                        operateRadio = '排除';
+                    } else {
+                        operateRadio = '全部';
+                        this.checkList = [];
+                        for (var j = 0; j < this.columnData.length; j++) {
+                            this.checkList.push(this.columnData[j].VAL);
+                        }
+                        var params = [{
+                            name: this.columnNameFilter,
+                            operator: 'in',
+                            listRadio:this.listRadio,
+                            listRadioOrderStatus:this.listRadioOrderStatus,
+                            type: 's',
+                            value: this.checkList
+                        }];
+                        this.installCondition('1', params);
+                        this.listItemText = operateRadio;
+                        return;
+                    }
+                    if (this.checkList.length > 0) {
+                        for (var i = 0; i < this.checkList.length; i++) {
+                            if (i > 2) {
+                                operateRadio += this.checkList[i];
+                                operateRadio += '等' + this.checkList.length + '项、';
+                                break;
+                            }
+                            operateRadio += this.checkList[i] + '、';
+                        }
+                        this.listItemText = operateRadio.substring(0, operateRadio.length - 1);
+                        var params = [{
+                            name: this.columnNameFilter,
+                            operator: this.operateRadio,
+                            listRadio:this.listRadio,
+                            listRadioOrderStatus:this.listRadioOrderStatus,
+                            type: 's',
+                            value: this.checkList
+                        }];
+                        this.installCondition('1', params);
+                    } else {
+                        this.removeCondition('1');
+                        this.listItemText = '无';
+                    }
+                },
+                //radio：包含、排除、全部 ，值改变时触发
+                operateRadioChange: function () {
+                    var operateRadio = '';
+                    if (this.operateRadio == 'all') {
+                        this.checkList = [];
+                        for (var j = 0; j < this.columnData.length; j++) {
+                            this.checkList.push(this.columnData[j].VAL);
+                        }
+                        this.listItemText = '使用全部';
+                    } else {
+                        if (this.checkList.length > 0) {
+                            var content = this.listItemText;
+                            if (this.operateRadio == 'in') {
+                                operateRadio = '包含';
+                            } else if (this.operateRadio == 'notin') {
+                                operateRadio = '排除';
+                            }
+                            this.listItemText = content.replace(content.substring(0, 2), operateRadio);
+                        } else {
+                            this.listItemText = '无';
+                        }
+                    }
+                    if (this.checkList.length > 0) {
+                        var params = [{
+                            name: this.columnNameFilter,
+                            operator: this.operateRadio == 'all' ? 'in' : this.operateRadio,
+                            listRadio:this.listRadio,
+                            listRadioOrderStatus:this.listRadioOrderStatus,
+                            type: 's',
+                            value: this.checkList
+                        }];
+                        this.installCondition('1', params);
+                    } else {
+                        this.removeCondition('1');
+                    }
+                },
+                /**
+                 *组装查询条件
+                 *@param tabType 1：列表查询      2：文本帅选      3：条件筛选       4：高级筛选        5：度量范围        6：时间
+                 *@param column:字段名
+                 *@param operator：in，like，eq，ne等
+                 *@param type:字段类型 s 字符串, i 整形, l 长整型 ,d 浮点型 保留4位小数, t 时间类型
+                 *@param val:值
+                 */
+                installCondition: function (tabType, cfgs) {
+                    this.conditionObjs[tabType] = cfgs;
+                    var condtions = [];
+                    for (var tabIndex in this.conditionObjs) {
+                        for (var i = 0; i < this.conditionObjs[tabIndex].length; i++) {
+                            condtions.push(this.conditionObjs[tabIndex][i]);
+                        }
+                    }
+                    this.conditions = condtions;
+                    console.info(JSON.stringify(this.conditions));
+                },
+                measureColumnHighChange : function () {
+
+                    if(this.measures && this.measures.length>0){
+                        for(var sindex=0;sindex<this.measures.length;sindex++){
+                            if(this.measures[sindex].COLUMN_NAME == this.measureColumnNameHigh){
+                                this.measureColumnRNameHigh = this.measures[sindex].COLUMN_RENAME;
+                            }
+                        }
+                        this.measureColumnHighConditionChange();
+                    }
+
+                },
+                measureColumnHighConditionChange:function () {
+                    var vals = [];
+                    var operateHigh = '';
+                    var operateHighText = '';
+                    var operateHighSymbol = '';
+
+                    var expressHighConditionFilter = "";
+                    var expressHighConditionFilterText = "";
+                    if(this.operateHighKey && this.operateHighVal){
+                        var rangHighResult = this.transformCountMethodExpress(this.countMethodKeyHigh);
+                        if(rangHighResult && rangHighResult.express && rangHighResult.expressText){
+                            expressHighConditionFilter = rangHighResult.express;
+                            expressHighConditionFilterText = rangHighResult.expressText;
+                        }
+                        vals = [this.operateHighVal];
+
+                        switch (this.operateHighKey) {
+                            case "1":
+                                operateHigh = 'le';
+                                operateHighText = '最大';
+                                operateHighSymbol = '<=';
+                                break;
+                            case "2":
+                                operateHigh = 'ge';
+                                operateHighText = '最小';
+                                operateHighSymbol = '>=';
+                                break;
+                            default:
+                                operateHigh = 'le';
+                                operateHighText = '最大';
+                                operateHighSymbol = '<=';
+                        }
+                        var params = [{
+                            name: expressHighConditionFilter+'_' + this.measureColumnNameHigh,
+                            operator: operateHigh,
+                            measureColumnRNameHigh:this.measureColumnRNameHigh,
+                            highFilter:true,
+                            type: 'd',
+                            value: vals
+                        }];
+                        this.highConditionFilterText = '按照'+expressHighConditionFilterText+'('+this.measureColumnRNameHigh+')'+'方式取'+operateHighText+this.operateHighVal+'项';
+                        this.installCondition('4', params);
+                    }
+                },
+                removeCondition: function (tabType) {
+                    delete this.conditionObjs[tabType];
+                    var condtions = [];
+                    for (var tabIndex in this.conditionObjs) {
+                        for (var i = 0; i < this.conditionObjs[tabIndex].length; i++) {
+                            condtions.push(this.conditionObjs[tabIndex][i]);
+                        }
+                    }
+                    this.conditions = condtions;
+                    console.info(JSON.stringify(this.conditions));
+                },
+                updateChartsObjConditionParam : function () {
+                    charts[selectChartWidget.attr('id')].config.dataModelSet.conditions = this.conditions;
+                },
+                removeConditionWithTwoParam: function (tabType,columnCode) {
+                    var tempValArr = this.conditionObjs[tabType];
+                    if(tempValArr.length<2){
+                        delete this.conditionObjs[tabType];
+                    }else {
+                        for( var tvaIndex=0;tvaIndex<tempValArr.length;tvaIndex++){
+                            var tempConditionObjItem = tempValArr[tvaIndex];
+                            if(tempConditionObjItem && tempConditionObjItem.name.indexOf(columnCode)!=-1){
+                                delete this.conditionObjs[tabType][tvaIndex];
+                            }
+                        }
+                    }
+
+                    var condtions = [];
+                    for (var tabIndex in this.conditionObjs) {
+                        for (var i = 0; i < this.conditionObjs[tabIndex].length; i++) {
+                            var tempConditionsItem = this.conditionObjs[tabIndex][i];
+                            if(tempConditionsItem){
+                                condtions.push(this.conditionObjs[tabIndex][i]);
+                            }
+
+                        }
+                    }
+                    this.conditions = condtions;
+                    console.info(JSON.stringify(this.conditions));
+                },
+                removeConditionWithArrParam: function (tabTypeArr) {
+                    if(tabTypeArr && tabTypeArr.length>0){
+                        for(var ttaIndex =0;ttaIndex<tabTypeArr.length;ttaIndex++){
+                            delete this.conditionObjs[ttaIndex];
+                        }
+                        var condtionsTtemp = [];
+                        for (var tab in this.conditionObjs) {
+                            for (var i = 0; i < this.conditionObjs[tab].length; i++) {
+                                if(this.conditionObjs[tab][i]){
+                                    condtionsTtemp.push(this.conditionObjs[tab][i]);
+                                }
+                            }
+                        }
+                        this.conditions = condtionsTtemp;
+                        console.info(JSON.stringify(this.conditions));
+                    }
+                },
+                assembleTempConditionParam: function (tabType) {
+                    var tempConditionObjs = this.conditionObjs;
+                    delete tempConditionObjs[tabType];
+                    var condtions = [];
+                    for (var tabIndex in tempConditionObjs) {
+                        for (var i = 0; i < tempConditionObjs[tabIndex].length; i++) {
+                            condtions.push(tempConditionObjs[tabIndex][i]);
+                        }
+                    }
+                    // this.conditions = condtions;
+                    return condtions;
+                },
+                //列表筛选：手动radio，输入值内容添加至数据集合中
+                addInputVal: function () {
+                    if (this.addVal == '') {
+                        return;
+                    }
+                    //判断数组中是否包含当前输入字符串，如果包含，再循环判断是否相等。规避每次都循环查找，提高效率
+                    if (JSON.stringify(this.definedData).indexOf(this.addVal) > 0) {
+                        for (var i = 0; i < this.definedData.length; i++) {
+                            if (this.definedData[i].VAL == this.addVal) {
+                                this.$message.error('已经存在【' + this.addVal + '】');
+                                this.addVal = '';
+                                return;
+                            }
+                        }
+                    }
+                    this.definedData.push({VAL: this.addVal});
+                    this.addVal = '';
+                    this.inOrOutInputVal();
+                },
+                //删除集合内数据
+                delInputVal: function (index) {
+                    this.definedData.splice(index, 1);
+                    if (this.definedData.length > 0) {
+                        this.inOrOutInputVal();
+                    } else {
+                        this.listItemText = '无';
+                        this.removeCondition('1');
+                    }
+                },
+                addSelectInput: function () {
+                    this.contentTexts.push({key: '1', text: ''});
+                },
+                delSelectInput: function (index) {
+                    this.contentTexts.splice(index, 1);
+                    this.andOrChange();
+                    if(this.contentTexts.length==0){
+                        this.installContentText = '无'
+                        this.removeCondition('2');
+                    }
+                },
+                //列表筛选：checkbox change事件
+                operateCheckedChange: function () {
+                    if (this.definedData.length > 0) {
+                        this.inOrOutInputVal();
+                    }
+                },
+                //checkbox 排除or包含
+                inOrOutInputVal: function () {
+                    var operate = '';
+                    var operateText = '';
+                    if (this.operateChecked) {
+                        operate = 'notin';
+                        operateText = '排除';
+                    } else {
+                        operate = 'in';
+                        operateText = '包含';
+                    }
+                    var content = '';
+                    var vals = [];
+                    for (var i = 0; i < this.definedData.length; i++) {
+                        if (i < 6) {
+                            content += this.definedData[i].VAL + '、';
+                        }
+                        vals.push(this.definedData[i].VAL);
+                    }
+                    content = content.substring(0, content.length - 1)
+                    if (this.definedData.length >= 6) {
+                        content += '等' + this.definedData.length + '项';
+                    }
+                    this.listItemText = operateText + content;
+                    var params = [{
+                        name: this.columnNameFilter,
+                        operator: operate,
+                        listRadio:this.listRadio,
+                        listRadioOrderStatus:this.listRadioOrderStatus,
+                        type: 's',
+                        value: vals
+                    }];
+                    this.installCondition('1', params);
+                },
+                andOrChange: function () {
+                    if (this.contentTexts.length > 0) {
+                        var existText = false;
+                        var isAndOrKey = this.topSelectVal == '1' ? 'and' : 'or';
+                        var isAndOrText = this.topSelectVal == '1' ? '并且' : '或者';
+                        var params = [];
+                        this.installContentText = '';
+                        for (var i = 0; i < this.contentTexts.length; i++) {
+                            var contentText = this.contentTexts[i];
+                            var operateCfg = this.operateSymbol(contentText.key);
+                            if (contentText.text != '') {
+                                existText = true;
+                                var cfgs = {
+                                    name: this.columnNameFilter,
+                                    operator: operateCfg.key,
+                                    topSelectVal:this.topSelectVal,
+                                    type: 's',
+                                    value: [contentText.text],
+                                    both: isAndOrKey
+                                }
+                                //判断当前元素的下一元素的值是否为空，为空删除both属性，反之不删除
+                                if (i == this.contentTexts.length - 1 || (i < this.contentTexts.length - 1 && this.contentTexts[i + 1].text == '')) {
+                                    delete cfgs.both;
+                                }
+                                params.push(cfgs);
+                                this.installContentText += operateCfg.text + contentText.text + ' ' + isAndOrText;
+                            }
+                        }
+                        if (existText) {
+                            this.installContentText = this.installContentText.substring(0, this.installContentText.length - 2);
+                            this.installCondition('2', params);
+                        } else {
+                            this.installContentText = '无';
+                        }
+                    } else {
+                        this.removeCondition('2');
+                    }
+                },
+                /**
+                 *根据key值，转换成包含接口定义的key值和显示中文名称的text
+                 *@param key 入参
+                 */
+                operateSymbol: function (key) {
+                    var cfgs = {
+                        key: '',
+                        text: ''
+                    };
+                    switch (key) {
+                        case '1':
+                            cfgs.key = 'like';
+                            cfgs.text = '包含';
+                            break;
+                        case '2':
+                            cfgs.key = 'likeL';
+                            cfgs.text = '开头是';
+                            break;
+                        case '3':
+                            cfgs.key = 'likeR';
+                            cfgs.text = '结尾是';
+                            break;
+                        case '4':
+                            cfgs.key = 'likeN';
+                            cfgs.text = '不包含';
+                            break;
+                        case '5':
+                            cfgs.key = 'eq';
+                            cfgs.text = '等于';
+                            break;
+                    }
+                    return cfgs;
+                },
+                /**
+                 *根据key值，转换成包含接口定义的key值和显示中文名称的text
+                 *@param key 入参
+                 */
+                transFormSymbolToKey: function (op) {
+                    var cfgs = {
+                        key: '',
+                        text: ''
+                    };
+                    switch (op) {
+                        case 'like':
+                            cfgs.key = '1';//1
+                            cfgs.text = '包含';
+                            break;
+                        case 'likeL':
+                            cfgs.key = '2';//2
+                            cfgs.text = '开头是';
+                            break;
+                        case 'likeR':
+                            cfgs.key = '3';//3
+                            cfgs.text = '结尾是';
+                            break;
+                        case 'likeN':
+                            cfgs.key = '4';//4
+                            cfgs.text = '不包含';
+                            break;
+                        case 'eq':
+                            cfgs.key = '5';//5
+                            cfgs.text = '等于';
+                            break;
+                    }
+                    return cfgs;
+                },
+                //初始化度量范围模态框参数
+                initMiniModalParams: function (columnItem) {
+                    this.initListItemData(columnItem);//初始化列表等信息
+                },
+                //初始化维度模态框参数   所有的初始化的方法都在这里
+                initNomalModalParams: function (columnItem) {
+                    this.definedData = [];
+                    this.contentTexts = [];
+                    this.initDataFilterListFilter(columnItem);//初始化列表等信息
+                    //还原列表过滤中的数据
+                    this.initListItemData(columnItem);
+                    this.initDataFilterHtml();
+                },
+                /**
+                 * colName  查询列
+                 * modelId 需要查询的具体表
+                 * 将点击的维度 以及维度所在表传入后端，以便查出具体地维度数据项
+                 * */
+                initDataFilterListFilter: function (columnItem) {
+                    if(columnItem && columnItem.columnName && columnItem.modelId){
+                        var me  = this;
+                        var listFilterData = {};
+                        listFilterData.modelId = columnItem.modelId;
+                        listFilterData.colName = columnItem.columnName;
+                        var jsonDataList = {
+                            httpMethod: 'POST',
+                            url: configpre.api_getColnameData,
+                            data: JSON.stringify(listFilterData),
+                        }
+                        ajaxrequestasync(jsonDataList, function (code, msg, json) {
+                            if (code == '200') {
+                                me.columnData =  json.body;
+                            }
+                        });
+                    };
+                },
+                initListItemData :function (columnItem) {
+                    var me = this;
+                    var opText = "";
+                    if(me.conditionObjs && me.conditionObjs.length>1){
+                        for(var wIndex = 0;wIndex< me.conditionObjs.length;wIndex++){
+                            var tempConditionParam = me.conditionObjs[wIndex];
+                            if(tempConditionParam && wIndex == 1 && tempConditionParam && tempConditionParam.length>0){//列表过滤
+                                opText = "";
+                                for(var tcp = 0;tcp<tempConditionParam.length;tcp++){
+                                    if(columnItem.columnName == tempConditionParam[tcp].name){
+                                        me.listRadioOrderStatus = tempConditionParam[tcp].listRadioOrderStatus;
+                                        if(tempConditionParam[tcp].listRadioOrderStatus){//列表
+                                            var tempList = tempConditionParam[tcp].value;
+                                            me.checkList = tempConditionParam[tcp].value;
+                                            if(tempConditionParam[tcp].listRadio){
+                                                me.listRadio = tempConditionParam[tcp].listRadio;
+                                            }
+                                            if((tempConditionParam[tcp].value.length == me.columnData.length) && tempConditionParam[tcp].operator=="in"){
+                                                me.operateRadio = "all";
+                                                opText = '选择全部';
+                                            } else {
+                                                if(tempConditionParam[tcp].operator=="in"){
+                                                    opText = '包含';
+                                                }else{
+                                                    opText = '排除';
+                                                }
+                                                me.operateRadio = tempConditionParam[tcp].operator;
+                                            }
+                                            if(tempList && tempList.length){
+                                                for(var rIndex=0;rIndex<tempList.length;rIndex++){
+                                                    if(rIndex == tempList.length-1){
+                                                        opText +=(tempList[rIndex]);
+                                                    }else {
+                                                        opText +=(tempList[rIndex]+",");
+                                                    }
+                                                }
+
+                                            }
+                                            opText +='等'+tempList.length +'项';
+                                            me.listItemText = opText;
+                                        }else{//手动
+                                            if(tempConditionParam[tcp].listRadio){
+                                                me.listRadio = tempConditionParam[tcp].listRadio;
+                                            }
+                                            me.operateChecked = tempConditionParam[tcp].operator== "notin"?true:false;
+                                            if(me.operateChecked){
+                                                opText = '排除';
+                                            }
+                                            var tempHandVals = tempConditionParam[tcp].value ;
+                                            if(tempHandVals && tempHandVals.length>0){
+                                                for(var ah=0;ah<tempHandVals.length;ah++){
+                                                    if(ah == tempHandVals.length-1){
+                                                        opText +=(tempHandVals[ah]);
+                                                    }else{
+                                                        opText +=(tempHandVals[ah]+',');
+                                                    }
+                                                    me.definedData.push({VAL:tempHandVals[ah]});
+                                                }
+                                            }
+                                            opText +='等'+tempHandVals.length +'项';
+                                            me.listItemText = opText;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            if(tempConditionParam && wIndex == 2 && tempConditionParam && tempConditionParam.length>0){   //文本过滤
+                                opText = "";
+                                for(var scp=0;scp<tempConditionParam.length;scp++){
+                                    if(columnItem.columnName == tempConditionParam[scp].name){
+                                        me.topSelectVal = tempConditionParam[scp].topSelectVal;
+                                        if(scp!=0){
+                                            if(me.topSelectVal == "1"){
+                                                opText +=" 并且 ";
+                                            }else {
+                                                opText +=" 或者 ";
+                                            }
+                                        }
+                                        var tempOp = tempConditionParam[scp].operator;
+                                        var textFliterItemCfg = me.transFormSymbolToKey(tempOp);
+                                        opText +=textFliterItemCfg.text;
+                                        var textFilterVals = tempConditionParam[scp].value;
+                                        if(textFilterVals && textFilterVals.length>0){
+                                            for(var textIndex=0;textIndex<textFilterVals.length;textIndex++){
+                                                opText +=textFilterVals[textIndex];
+                                                me.contentTexts.push({key:textFliterItemCfg.key,text:textFilterVals[textIndex]});
+                                            }
+                                        }
+                                    }
+                                }
+                                me.installContentText = opText;
+                            }
+                            if(tempConditionParam && wIndex == 3 && tempConditionParam && tempConditionParam.length>0){ //条件筛选
+                                opText = "";
+                                for(var tcp=0;tcp<tempConditionParam.length;tcp++){
+                                    var tempName = tempConditionParam[tcp].name;
+                                    var tempRName = tempConditionParam[tcp].measureColumnRName;
+                                    if(tempName && ''!=tempName){
+                                        var strIndex = tempName.indexOf('(');
+                                        var conditionFilterOp = tempName.substring(0,strIndex);
+                                        var colname = tempName.substring(strIndex+1,tempName.length-1);
+
+                                        var tempConditionOp = tempConditionParam[tcp].operator;
+                                        var tempConditionCfg = this.transformConditonOpToKey(tempConditionOp);//过滤方式
+                                        var tempCountCfg = this.transformCountMethodFromExpressToKey(conditionFilterOp);//统计方式
+                                        if(tempCountCfg){
+                                            me.countMethodKey = tempCountCfg.countKey;
+                                        }
+                                        if(tempConditionCfg){
+                                            me.operateKey = tempConditionCfg.conKey;
+                                        }
+                                        me.measureColumnName = colname;
+                                        me.measureColumnRName = tempRName;
+                                        var conditionFilterVals = tempConditionParam[tcp].value;
+                                        if(conditionFilterVals && conditionFilterVals.length>0){
+                                            for(var conIndex=0;conIndex<conditionFilterVals.length;conIndex++){
+                                                opText = (tempCountCfg.countText+"("+tempRName+")"+tempConditionCfg.conOpSymbol+conditionFilterVals[conIndex]);
+                                                me.operateVal = conditionFilterVals[conIndex];
+                                            }
+                                        }
+
+                                    }
+                                }
+                                me.termsText = opText;
+                            }
+                            if(tempConditionParam && wIndex == 4 && tempConditionParam && tempConditionParam.length>0){
+                                opText = "";
+                                for(var hcp=0;hcp<tempConditionParam.length;hcp++){
+                                    var temphName = tempConditionParam[hcp].name;
+                                    var temphRName = tempConditionParam[hcp].measureColumnRNameHigh;
+                                    if(temphName && ''!=temphName){
+                                        var strhIndex = temphName.indexOf('_');
+                                        var highFilterOp = temphName.substring(0,strhIndex);
+                                        var colhighname = temphName.substring(strhIndex+1,temphName.length);
+                                        var tempHighOp = tempConditionParam[hcp].operator;
+                                        var highOpExpress = this.transformHighFilterExpress(tempHighOp);
+                                        var tempHihgCfg = this.transformCountMethodFromExpressToKey(highFilterOp);//统计方式
+                                        if(tempHihgCfg){
+                                            me.countMethodKey = tempHihgCfg.countKey;
+                                        }
+                                        me.measureColumnNameHigh = colhighname;
+                                        me.measureColumnRNameHigh = temphRName;
+
+                                        var highFilterVals = tempConditionParam[hcp].value;
+
+                                        if(highFilterVals && highFilterVals.length>0){
+                                            for(var hIndex=0;hIndex<highFilterVals.length;hIndex++){
+                                                opText = "按照"+(tempHihgCfg.countText+"("+temphRName+")"+"方式取"+highOpExpress.opHighText+highFilterVals[hIndex]+'项');
+                                                me.operateHighVal = highFilterVals[hIndex];
+                                            }
+                                        }
+                                    }
+                                    me.highConditionFilterText = opText;
+                                }
+                            }
+                            if(tempConditionParam && wIndex == 5 && tempConditionParam && tempConditionParam.length>0){//度量过滤
+                                var tmeaFlag = false;
+                                for(var mcp=0;mcp<tempConditionParam.length;mcp++){
+                                    me.meauConditionParams = tempConditionParam;
+                                    if(tempConditionParam[mcp]){
+                                        var tempmeasureName = tempConditionParam[mcp].name;
+                                        if(tempmeasureName && ''!=tempmeasureName){
+                                            var strMeasurIndex = tempmeasureName.indexOf('(');
+                                            var measurConditionFilterOp = tempmeasureName.substring(0,strMeasurIndex);
+                                            var measurColname = tempmeasureName.substring(strMeasurIndex+1,tempmeasureName.length-1);
+                                            if(measurColname == this.columnNameFilter){
+                                                var tempCountCfg = this.transformCountMethodFromExpressToKey(measurConditionFilterOp);//统计方式
+
+                                                var tempmeasureoperator = tempConditionParam[mcp].operator;
+                                                var tempmeasureValueArr = tempConditionParam[mcp].value;
+                                                me.rangeValue = tempmeasureValueArr;
+                                                if(tempCountCfg){
+                                                    me.countMethodKey = tempCountCfg.countKey;
+                                                }
+                                                if(tempmeasureoperator && ''!=tempmeasureoperator){
+                                                    tmeaFlag = true;
+                                                    switch (tempmeasureoperator){
+                                                        case 'between'://之间
+                                                            if(tempmeasureValueArr && tempmeasureValueArr.length ==2){
+                                                                me.rangeValL = tempmeasureValueArr[0];
+                                                                me.rangeValR =tempmeasureValueArr[1];
+                                                                me.tempRangeValL = tempmeasureValueArr[0];
+                                                                me.tempRangeValR =tempmeasureValueArr[1];
+                                                            }
+                                                            me.rangeVal = '1';
+                                                            me.rangeLStatus = false;
+                                                            me.rangeRStatus = false;
+                                                            break;
+                                                        case 'ge'://大于
+                                                            if(tempmeasureValueArr && tempmeasureValueArr.length ==1){
+                                                                me.rangeValL = tempmeasureValueArr[0];
+                                                                me.rangeValR = '';
+                                                                me.tempRangeValL = tempmeasureValueArr[0];
+                                                            }
+                                                            me.rangeRStatus = true;
+                                                            me.rangeVal = '2';
+                                                            break;
+                                                        case 'le'://小于
+                                                            if(tempmeasureValueArr && tempmeasureValueArr.length==1){
+                                                                me.rangeValR = tempmeasureValueArr[0];
+                                                                me.rangeValL = '';
+                                                                me.tempRangeValR = tempmeasureValueArr[0];
+                                                            }
+                                                            me.rangeVal = '3';
+                                                            me.rangeLStatus = true;
+                                                            break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+
+                                }
+                                if(!tmeaFlag){
+                                    me.rangeValR = '请输入最大值';
+                                    me.rangeValL = '请输入最小值';
+                                    me.rangeLStatus = false;
+                                    me.rangeRStatus = false;
+                                }
+                            }
+                        }
+                    }
+                },
+                transformHighFilterExpress : function (express) {
+                    var opHighKey = '';
+                    var opHighText = '';
+                    var expressItem = {};
+                    if(express && ''!= express){
+                        switch (this.operateHighKey) {
+                            case "le":
+                                opHighKey = 'le';//1
+                                opHighText = '最大';
+                                break;
+                            case "ge":
+                                opHighKey = 'ge';//2
+                                opHighText = '最小';
+                                break;
+                            default:
+                                opHighKey = 'le';//1
+                                opHighText = '最大';
+                        }
+                    }
+                    if(''!= opHighKey){
+                        expressItem.opHighKey = opHighKey;
+                    }
+                    if(''!= opHighText){
+                        expressItem.opHighText = opHighText;
+                    }
+                    return expressItem;
+                },
+                transformCountMethodFromExpressToKey : function (method) {
+                    if(method && ""!=method){
+                        var countCfg = {};
+                        var countKey = '';
+                        var countText = '';
+                        switch (method){
+                            case "SUM":
+                                countKey = '1';
+                                countText = '求和';
+                                break;
+                            case "AVG":
+                                countKey = '2';
+                                countText = '求平均';
+                                break;
+                            case "MAX":
+                                countKey = '3';
+                                countText = '求最大';
+                                break;
+                            case "MIN":
+                                countKey = '4';
+                                countText = '求最小';
+                                break;
+                        }
+                        countCfg.countKey = countKey;
+                        countCfg.countText = countText;
+                        return countCfg;
+                    }
+                },
+                transformConditonOpToKey : function (op) {
+                    var conditionCfg={};
+                    if(op && ''!=op){
+                        var conKey='';
+                        var conText='';
+                        var conOpSymbol='';
+                        switch (op) {
+                            case "ge":
+                                conKey = '1';//1
+                                conText = '大于等于';
+                                conOpSymbol = '>=';
+                                break;
+                            case "gt":
+                                conKey = '2';//2
+                                conText = '大于';
+                                conOpSymbol = '>';
+                                break;
+                            case "eq":
+                                conKey = '3';//3
+                                conText = '等于';
+                                conOpSymbol = '=';
+                                break;
+                            case "le":
+                                conKey = '4';//4
+                                conText = '小于等于';
+                                conOpSymbol = '<=';
+                                break;
+                            case "lt":
+                                conKey = '5';//5
+                                conText = '小于';
+                                conOpSymbol = '<';
+                                break;
+                            case "ne":
+                                conKey = '6';//6
+                                conText = '不等于';
+                                conOpSymbol = '!=';
+                                break;
+                        }
+                        conditionCfg.conKey = conKey;
+                        conditionCfg.conText = conText;
+                        conditionCfg.conOpSymbol = conOpSymbol;
+                        return conditionCfg;
+                    }
+                },
+                //重置参数
+                resetParams: function () {
+                    this.rangeValL = 1;
+                    this.rangeValR = 100;
+                    this.rangeLStatus = false,
+                        this.rangeRStatus = false,
+                        this.loadRangeStatus = false;
+                    this.rangeValue = [1, 100];
+                    this.minVal = 1;
+                    this.maxVal = 100;
+                    this.rangeVal = '1';
+                    this.contentTexts = [];
+                },
+                handleCurrentChange(val) {
+                    this.pageFlag = true;
+                    $('#datamodeltable tr').removeClass('info');
+                    this.dealModelData('dataModelList', null, null, val);
+                },
+                //标记该组件已经选择的数据明细，并触发数据明细的点击事件
+                dealSelDataModel: function () {
+                    var dms = this.dataModelList;
+                    var containerId = selectChartWidget.attr('id');
+                    var dataModelSet = charts[containerId].config.dataModelSet;
+                    var selDataModelId = dataModelSet.id;
+                    var modelSelectFlag = false;
+                    if (selDataModelId) {
+                        for (var index in dms) {
+                            var dm = dms[index];
+                            if (selDataModelId == dm.ID) {
+                                modelSelectFlag = true;
+                                var tdEls = $('.idHide');
+                                for (var i = 0; i < tdEls.length; i++) {
+                                    var tdEl = tdEls.get(i);
+                                    if ($(tdEl).text() == selDataModelId) {
+                                        $('#datamodeltable tr').removeClass('info');
+                                        $($(tdEl).parent()).addClass('info');
+                                        if (!this.pageFlag) {
+                                            this.dealModelData('dataModel', dm);
+                                        }
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (!modelSelectFlag) {
+                        if (!this.pageFlag) {
+                            this.dealModelData('dataModel', this.modelItem);
+                        }
+                        return;
+                    }
+
+                },
+                queryDataModelInfo: function (modelId) {
+                    var me = this;
+                    var jsonModelData = {
+                        httpMethod: 'POST',
+                        url: configpre.api_loadModelById,
+                        data: JSON.stringify({modelId: modelId}),
+                    }
+                    ajaxrequestasync(jsonModelData, function (code, msg, json) {
+                        if (code == '200') {
+                            var tempItem = json.body[0];
+                            me.modelItem = tempItem;
+                        }
+                    });
+
+                },
+                //根据不同的组件类型对页面中的维度和度量是否显示进行处理
+                dealEl: function () {
+                    var chartType = selectChartWidget.attr('chart-type');
+                    if (chartType == 'carouselTable') {
+                        //this.measureSelDisplay=false;
+                        //this.colOffset='col-sm-offset-6';
+                        //this.dimensionSelName='列';
+                        this.selectedColumnList[0].title = '列';
+                        this.selectedColumnList[0].display = true;
+                        this.selectedColumnList[1].display = false;
+                        this.selectedColumnList[2].display = false;
+                    }
+                    if (chartType == 'pieSingleValue' || chartType == 'gauge' || chartType == 'dynamicNum') {
+                        //this.dimDisplay=false;
+                        this.selectedColumnList[0].display = false;
+                        this.selectedColumnList[1].title = '已选度量';
+                        this.selectedColumnList[1].display = true;
+                        this.selectedColumnList[2].display = false;
+                    }
+                    if (chartType == 'doubleAxis') {
+                        //this.dimensionSelName='X轴';
+                        //this.doubleAxisDisplay=true;
+                        this.selectedColumnList[0].title = 'X轴';
+                        this.selectedColumnList[0].display = true;
+                        this.selectedColumnList[1].title = 'Y左轴';
+                        this.selectedColumnList[1].display = true;
+                        this.selectedColumnList[2].display = true;
+                    }
+                },
+
+                dealModelData: function (flag, item, event, pageNo) {
+                    if (event) {
+                        this.pageFlag = false;
+                        var el = event.currentTarget;
+                        $('#datamodeltable tr').removeClass('info');
+                        $(el).addClass('info');
+                    }
+                    var me = this;
+                    var jsonDataList = {
+                        httpMethod: 'POST',
+                        url: configpre.api_loadModels,
+                        data: JSON.stringify({pageSize: me.pageSize, pageNo: pageNo || 1}),
+                    }
+                    var jsonDataDataModel = {
+                        httpMethod: 'POST',
+                        url: configpre.api_getTableData,
+                        data: JSON.stringify({ID: item ? item.ID : ''}),
+                    }
+                    if (flag == 'dataModelList') {
+                        ajaxrequestasync(jsonDataList, function (code, msg, json) {
+                            if (code == '200') {
+                                var body = json.body;
+                                me.totalCount = json.totalCount;
+                                me.dataModelList = body;
+                                //数据发生变化页面渲染完成之后，执行，
+                                me.$nextTick(me.dealSelDataModel);
+                            }
+                        });
+                    }
+                    if (flag == 'dataModel') {
+                        ajaxrequestasync(jsonDataDataModel, function (code, msg, json) {
+                            if (code == '200') {
+                                me.dataModelId = item.ID;
+                                me.defaultText = me.changeModelText + item.CN_NAME;
+                                var containerId = selectChartWidget.attr('id');
+                                var dataModelSet = charts[containerId].config.dataModelSet;
+                                dataModelSet.pageNum = me.currentPage;
+                                var dimensions = dataModelSet.dimensions;
+                                var measures = dataModelSet.measures;
+                                var dimDatas = json.dimensionColList;
+                                var meaDatas = json.metricColList;
+                                //如果选中的还是之前已经选择的元素，则给已经选择的维度和度量添加已经选择的标记，配合拖拽使用
+                                if (dataModelSet.id == me.dataModelId) {
+                                    for (var index in dimDatas) {
+                                        var dimData = dimDatas[index];
+                                        for (var dIndex in dimensions) {
+                                            var dim = dimensions[dIndex];
+                                            if (dimData.COLUMN_NAME == dim.COLUMN_NAME) {
+                                                dimData.filtered = true;
+                                            }
+                                        }
+                                    }
+                                    for (var index in meaDatas) {
+                                        var meaData = meaDatas[index];
+                                        for (var mIndex in measures) {
+                                            var mea = measures[mIndex];
+                                            if (meaData.COLUMN_NAME == mea.COLUMN_ORIGINAL_NAME) {
+                                                meaData.filtered = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                me.dimensions = dimDatas;
+                                me.measures = meaDatas;
+                                me.changeDisplay();
+                                //数据发生变化页面渲染完成之后，执行，
+                                me.$nextTick(me.cloneEl)
+                            }
+                        });
+                    }
+                },
+                changeDisplay: function () {
+                    this.trDisplay = !this.trDisplay;
+                    if (!this.trDisplay) {
+                        this.mouseoverTip = "查看模型";
+                    } else {
+                        this.mouseoverTip = "设置维度和度量";
+                    }
+                },
+                cloneEl: function () {
+                    //把渲染的页面元素复制一份到拖拽区域
+                    $('#dimension-all').html($('#dimension-all-clone').html());
+                    $('#measure-all').html($('#measure-all-clone').html());
+                    var containerId = selectChartWidget.attr('id');
+                    var dataModelSet = charts[containerId].config.dataModelSet;
+                    //如果点击的还是之前选择的数据模型，则将已选择的维度和度量展现出来
+                    if (this.dataModelId == dataModelSet.id) {
+                        var dimensionsHtml = dataModelSet.dimensionsHtml;
+                        var measuresHtml = dataModelSet.measuresHtml;
+                        var measuresHtml2 = dataModelSet.measuresHtml2;
+                        var filterHtml = dataModelSet.filterHtml;
+                        $('#dimension-selected').html(dimensionsHtml);
+                        $('#measure-selected').html(measuresHtml);
+                        $('#measure-selected2').html(measuresHtml2);
+                        $('#filter-selected').html(filterHtml);
+                    } else {
+                        $('#dimension-selected').html('');
+                        $('#measure-selected').html('');
+                        $('#measure-selected2').html('');
+                        $('#filter-selected').html('');
+                        charts[containerId].config.dataModelSet.id = this.dataModelId;
+                        charts[containerId].config.dataModelSet.dimensions = [];
+                        charts[containerId].config.dataModelSet.measures = [];
+                        charts[containerId].config.dataModelSet.groupBy = [];
+                        //重新选择数据模型之后，要清空数据格式的配置
+                        var dataFormatCfg = charts[containerId].config.viewSet.dataFormat;
+                        if (!$.isEmptyObject(dataFormatCfg)) {
+                            charts[containerId].config.viewSet.dataFormat = '';
+                        }
+                    }
+                },
+                openCountMethod: function () {
+                    $('#calcuteModal').modal();
+                },
+                setCountMethod: function (item) {
+                    if (dataModelVue.measuresSeted.length > 0) {
+                        for (var setedIndex = 0; setedIndex < dataModelVue.measuresSeted.length; setedIndex++) {
+                            if ($(item).attr('column_name') == dataModelVue.measuresSeted[setedIndex].code) {
+                                dataModelVue.countMethod = dataModelVue.measuresSeted[setedIndex].countIndex;
+                            }
+                        }
+                    }
+                },
+                /**组装条件过滤参数对象
+                 *
+                 *
+                 *           维度   列表刷选   文本筛选   条件筛选
+                 * conditon
+                 *           度量
+                 *    需要两个全局变量  一个变量   针对布局打开时，存所有组件的信息
+                 */
+                // assembleConditionParamData : function () {
+                //     charts[selectChartWidget.attr('id')]
+                // },
+            }
+        });
+    });
+    vm.destroyObjCollection.push(dataModelVue);
+
+    function openModals(size, event,flag) {
+        if(flag){
+            var obj = $(event);
+            var columnItem = {
+                columnName: obj.attr('column_name'),
+                columnRname: obj.attr('column_rname'),
+                modelId: obj.attr('datamodel_id')
+            }
+            dataModelVue.openClick(size, columnItem);
+        }else if($(event).parent().attr('id') == 'filter-selected'){
+            var obj = $(event);
+            var columnItem = {
+                columnName: obj.attr('column_name'),
+                columnRname: obj.attr('column_rname'),
+                modelId: obj.attr('datamodel_id')
+            }
+            dataModelVue.openClick(size, columnItem);
+        }
+    }
+
+    function measureRightMenu(item) {
+        var event = arguments.callee.caller.arguments[0] || event;
+        event.preventDefault();
+        dataModelVue.measureRightMenuVisible = true;
+        dataModelVue.optionItem = {
+            columnName: $(item).attr('column_name'),
+            columnRname: $(item).attr('column_rname'),
+            opObj: item,
+            measureItem: charts[selectChartWidget.attr('id')].config.dataModelSet.measures
+        };
+        dataModelVue.setCountMethod(item);
+        var menu = document.querySelector('#measureRightMenu');
+        menu.style.left = event.clientX + 50 + 'px';
+        document.addEventListener('click', this.foo);// 给整个document添加监听鼠标事件，点击任何位置执行foo方法
+        menu.style.top = event.clientY - 10 + 'px';
+        console.log('右键被点击的event1:', event);
+    }
+
+    function foo() {
+        dataModelVue.measureRightMenuVisible = false;
+        document.removeEventListener('click', this.foo); // 要及时关掉监听，不关掉的是一个坑，不信你试试，虽然前台显示的时候没有啥毛病，加一个alert你就知道了
+    }
+
+</script>
