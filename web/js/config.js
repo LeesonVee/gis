@@ -6,14 +6,16 @@
     let localhostPath=curWwwPath.substring(0,pos);
     let projectName=pathName.substring(0,pathName.substr(1).indexOf('/')+1);
     configpre.projectPath=localhostPath+projectName;
-    // let apiRootPath='http://127.0.0.1:8120/hub/';
+    let apiRootPath='http://127.0.0.1:8120/hub/';
 
     // let apiRootPath='http://10.32.0.169:8120/hub/';
-    let apiRootPath='http://10.32.3.8:8120/hub/';
+    // let apiRootPath='http://10.32.3.8:8120/hub/';
     // let apiRootPath='http://10.195.237.115:8120/hub/';
     configpre.api_rootPath=apiRootPath;
     configpre.api_loadModels=apiRootPath+'api/loadModels.html';
     configpre.api_loadGisModels=apiRootPath+'map/loadGisModel.html';
+    configpre.api_getColnameData = apiRootPath+'api/getColnameFilterData.html';
+    configpre.api_getTableDataMixInfo=apiRootPath+'api/getTableDataMixInfo.html';
 
     configpre.map_saveMapData=apiRootPath+'map/saveMapData.html';
     configpre.map_createFile=apiRootPath+'map/createFile.html';
@@ -34,12 +36,14 @@
     configpre.map_loadModelDataFloat=apiRootPath+'map/loadModelDataFloat.html';
     configpre.map_saveModelDataFloat=apiRootPath+'map/saveModelDataFloat.html';
     configpre.map_loadFloatDialogByRelation=apiRootPath+'map/loadFloatDialogByRelation.html';
+    configpre.map_loadGisRelationConditionsByColNameAndRelationId=apiRootPath+'map/loadGisRelationConditionsByColNameAndRelationId.html';
+    configpre.map_saveGisRelationConditions=apiRootPath+'map/saveGisRelationConditions.html';
 
 
 
 
-    // configpre.webGisPath='http://127.0.0.1:8140/gis/';
+    configpre.webGisPath='http://127.0.0.1:8140/gis/';
     // configpre.webGisPath='http://10.32.0.169:8140/gis/';
-    configpre.webGisPath='http://10.32.3.8:8120/gis/';
+    // configpre.webGisPath='http://10.32.3.8:8120/gis/';
     // configpre.webGisPath='http://10.195.237.116:8140/gis/';
 })(window);

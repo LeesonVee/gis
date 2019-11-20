@@ -9,6 +9,10 @@
     <script type="text/javascript" src="js/vue.min.js"></script>
     <script src="js/element.js"></script>
     <link rel="stylesheet" href="css/bootstrap.css" type="text/css">
+    <link rel="stylesheet" href="css/component.css" type="text/css">
+    <link rel="stylesheet" href="./font_third/font-ali/iconfont.css">
+    <link rel="stylesheet" href="./font_third/font-awesome/css/site.css">
+    <link rel="stylesheet" href="./font_third/font-awesome/font-awesome/css/font-awesome.css">
     <script src="js/jquery-2.2.3.min.js"></script>
     <script type="text/javascript" src="js/ajaxrequestasync.js"></script>
     <script type="text/javascript" src="js/ajaxrequestsync.js"></script>
@@ -273,12 +277,17 @@
                                             </el-row>
                                             <el-row>
                                                 <el-table :data="marksHeadData" border style="width: 100%" size="mini" max-height="350">
-                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                    <el-table-column label="样式设置">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="170"></el-table-column>
+                                                    <el-table-column label="样式设置" width="130">
                                                         <template slot-scope="scope">
                                                             <el-button @click="showMarks(scope.$index,scope.row,'1')" type="text" size="small">显示</el-button>
                                                             <el-button @click="modifyClick(scope.$index,scope.row,'1')" type="text" size="small">修改</el-button>
                                                             <el-button @click="delModelRelation(scope.$index,scope.row,'1')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                    <el-table-column label="数据过滤">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="dataSettingClick(scope.row)" type="text" size="small">设置</el-button>
                                                         </template>
                                                     </el-table-column>
                                                 </el-table>
@@ -294,12 +303,17 @@
                                             </el-row>
                                             <el-row>
                                                 <el-table :data="hotMapData" border style="width: 100%" size="mini" max-height="350">
-                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                    <el-table-column label="样式设置">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="170"></el-table-column>
+                                                    <el-table-column label="样式设置" width="130">
                                                         <template slot-scope="scope">
                                                             <el-button @click="showMarks(scope.$index,scope.row,'2')" type="text" size="small">显示</el-button>
                                                             <el-button @click="modifyClick(scope.$index,scope.row,'2')" type="text" size="small">修改</el-button>
                                                             <el-button @click="delModelRelation(scope.$index,scope.row,'2')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                    <el-table-column label="数据过滤">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="dataSettingClick(scope.row)" type="text" size="small">设置</el-button>
                                                         </template>
                                                     </el-table-column>
                                                 </el-table>
@@ -315,12 +329,17 @@
                                             </el-row>
                                             <el-row>
                                                 <el-table :data="lableMapData" border style="width: 100%" size="mini" max-height="350">
-                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                    <el-table-column label="样式设置">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="170"></el-table-column>
+                                                    <el-table-column label="样式设置" width="130">
                                                         <template slot-scope="scope">
                                                             <el-button @click="showMarks(scope.$index,scope.row,'3')" type="text" size="small">显示</el-button>
                                                             <el-button @click="modifyClick(scope.$index,scope.row,'3')" type="text" size="small">修改</el-button>
                                                             <el-button @click="delModelRelation(scope.$index,scope.row,'3')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                    <el-table-column label="数据过滤">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="dataSettingClick(scope.row)" type="text" size="small">设置</el-button>
                                                         </template>
                                                     </el-table-column>
                                                 </el-table>
@@ -336,12 +355,17 @@
                                             </el-row>
                                             <el-row>
                                                 <el-table :data="flightMapData" border style="width: 100%" size="mini" max-height="350">
-                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="220"></el-table-column>
-                                                    <el-table-column label="样式设置">
+                                                    <el-table-column prop="MODEL_RELATION_NAME" label="名称" width="170"></el-table-column>
+                                                    <el-table-column label="样式设置" width="130">
                                                         <template slot-scope="scope">
                                                             <el-button @click="showMarks(scope.$index,scope.row,'4')" type="text" size="small">显示</el-button>
                                                             <el-button @click="modifyClick(scope.$index,scope.row,'4')" type="text" size="small">修改</el-button>
                                                             <el-button @click="delModelRelation(scope.$index,scope.row,'4')" type="text" size="small">删除</el-button>
+                                                        </template>
+                                                    </el-table-column>
+                                                    <el-table-column label="数据过滤">
+                                                        <template slot-scope="scope">
+                                                            <el-button @click="dataSettingClick(scope.row)" type="text" size="small">设置</el-button>
                                                         </template>
                                                     </el-table-column>
                                                 </el-table>
@@ -720,6 +744,14 @@
             <el-button type="primary" @click="dialogCreateHtmlTemplate = false">确 定</el-button>
         </span>
     </el-dialog>
+    <!--数据过滤弹框-->
+    <el-dialog title="数据过滤" :visible.sync="filterDialog" width="55%" :close-on-click-modal = "false">
+        <filter-component :data="filterData"></filter-component>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="filterDialog = false">取 消</el-button>
+            <el-button type="primary" @click="filterDialog = false">确 定</el-button>
+        </span>
+    </el-dialog>
 </div>
 <script type="text/javascript">
     var mapVue= new Vue({
@@ -975,7 +1007,14 @@
             flightData:[],
             dialogCreateHtmlTemplate:false,
             dialogHtmlTemplateWidth:25,
-            htmlTemplatePath:'http://10.32.0.169:8120/gis/html/GIS_51af0635640845dcb249.html'
+            htmlTemplatePath:'http://10.32.0.169:8120/gis/html/GIS_51af0635640845dcb249.html',
+            filterDialog:false,
+            filterData:{
+                modelRelationId:'',
+                dataRadio:'',
+                dimensionColList:[],
+                metricColList:[]
+            }
         },
         created(){
             this.loadParam();
@@ -1500,10 +1539,12 @@
                 let me = this;
                 let jsonDataList = this.rquestParams(method,api,data);
                 ajaxrequestasync(jsonDataList,function(code,msg,json){
-                    if(code=='200' && json.body){
+                    if(code==200 && json.body){
                         let body = json.body;
                         me.dimensionColList = body.dimensionColList ||[];
                         me.metricColList = body.metricColList ||[];
+                        me.filterData.dimensionColList=body.dimensionColList;
+                        me.filterData.metricColList=body.metricColList;
                         if(floatCol){
                             me.changeCoordCol(floatCol);
                         }
@@ -2247,7 +2288,17 @@
                 let width = this.$refs.appScreen.offsetWidth;
 //                let height = this.$refs.appScreen.offsetHeight;
                 this.dialogHtmlTemplateWidth = 480/width*100;
-            }
+            },
+            dataSettingClick:function(row){
+                this.filterDialog=true;
+                let params = {
+                    MODEL_ID: row.MODEL_ID,
+                    TABLE_NAME: row.TABLE_NAME
+                };
+                this.loadModelColumnData('POST',configpre.api_loadColsByTableNameAndModleId,params);
+                this.filterData['modelRelationId'] = row.MODEL_RELATION_ID;
+                this.filterData['dataRadio'] = '';
+            },
         }
     });
 

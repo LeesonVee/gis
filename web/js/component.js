@@ -1,5 +1,5 @@
 /**
- * Created by Administrator on 2019/10/9.
+ * Created by Vee on 2019/10/9.
  */
 Vue.component('nomal-float',{
     props:['data','suffix'],
@@ -57,6 +57,8 @@ Vue.component('filter-component',{
             name:'',
             rename:'',
             type:'',
+            measures:[],
+            dimensions:[],
             filterParams:{
                 activeName:'first',
                 listRadio:1,
@@ -69,9 +71,16 @@ Vue.component('filter-component',{
                 radioRange:1,
                 leftNum:'',
                 rightNum:'',
+                beginTime:'',
+                endTime:'',
+                leftNumDisabled:false,
+                rightNumDisabled:false,
+                beginTimeDisabled:false,
+                endTimeDisabled:false,
                 listItemText: '无',
                 installContentText:'无',
                 termsText: '无',
+                highConditionFilterText:'无',
                 addVal:'',
                 operateChecked:false,
                 topSelectVal: '1',
@@ -82,14 +91,27 @@ Vue.component('filter-component',{
                 countMethodKey: '1',
                 operateVal: '',
                 operateKey: '1',
+                conditionFilter:{
+                    MAX:0,
+                    MIN:0,
+                },
+                conditionStatus:true,
+                measureColumnNameHigh:'',
+                countMethodKeyHigh:'1',
+                operateHighKey:'1',
+                operateHighVal:'',
+                measureColumnRNameHigh : '',
+                highConditionStatus:true,
+                focusColumn:''
             },
+
             topOptions: [{key: '1', text: '包含以下所有条件'}, {key: '2', text: '包含以下任意条件'}],
             bodyOptions: [
-                {key: '1', text: '包含'},
-                {key: '2', text: '开头是'},
-                {key: '3', text: '结尾是'},
-                {key: '4', text: '不包含'},
-                {key: '5', text: '等于'}
+                {key: '1', text: '包含',code:'like'},
+                {key: '2', text: '开头是',code:'likeL'},
+                {key: '3', text: '结尾是',code:'likeR'},
+                {key: '4', text: '不包含',code:'likeN'},
+                {key: '5', text: '等于',code:'eq'}
             ],
             countMethodNames: [
                 {key: '1', text: '求和'},
@@ -107,17 +129,49 @@ Vue.component('filter-component',{
                 {key: '4', text: '求最小'}
             ],
             operates: [
-                {key: '1', text: '大于等于'},
-                {key: '2', text: '大于'},
-                {key: '3', text: '等于'},
-                {key: '4', text: '小于等于'},
-                {key: '5', text: '小于'},
-                {key: '6', text: '不等于'}
+                {key: '1', text: '大于等于',code:'ge'},
+                {key: '2', text: '大于',code:'gt'},
+                {key: '3', text: '等于',code:'eq'},
+                {key: '4', text: '小于等于',code:'le'},
+                {key: '5', text: '小于',code:'lt'},
+                {key: '6', text: '不等于',code:'ne'}
             ],
-            columnData: [{VAL: '江西'}, {VAL: '上海'}, {VAL: '北京'}, {VAL: '黑龙江'}, {VAL: '新疆'}, {VAL: '湖南'}, {VAL: '湖北'}, {VAL: '四川'}, {VAL: '东北'}, {VAL: '山东'}],
+            operateMaxAndMin: [
+                {key: '1', text: '最大',code:'le'},
+                {key: '2', text: '最小',code:'ge'}
+            ],
+            labelPosition: 'right',
+            columnData: [],
             conditionObjs:[],
-            conditions:[]
+            conditions:[],
+            filters:[],
+            groupBy:[],
+            pickerOptions: {
+                shortcuts: [{
+                    text: '今天',
+                    onClick(picker) {
+                        picker.$emit('pick', new Date());
+                    }
+                }, {
+                    text: '昨天',
+                    onClick(picker) {
+                        const date = new Date();
+                        date.setTime(date.getTime() - 3600 * 1000 * 24);
+                        picker.$emit('pick', date);
+                    }
+                }, {
+                    text: '一周前',
+                    onClick(picker) {
+                        const date = new Date();
+                        date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+                        picker.$emit('pick', date);
+                    }
+                }]
+            }
         }
+    },
+    mounted(){
+        this.initParams();
     },
     props:['data'],
     template:`<div>
@@ -279,14 +333,69 @@ Vue.component('filter-component',{
                                                     </el-col>
                                                     <el-col :span="2">&nbsp;&nbsp;的</el-col>
                                                     <el-col :span="8">
-                                                        <el-select v-model="filterParams.countMethodKey" size="mini" @change="conditionFilterChange">
+                                                        <el-select v-model="filterParams.countMethodKey" :disabled="filterParams.conditionStatus" size="mini" @change="conditionFilterChange">
                                                             <el-option v-for="item in countMethodList" :key="item.key" :label="item.text" :value="item.key" ></el-option>
                                                         </el-select>
                                                     </el-col>
                                                 </el-row>
+                                                <el-row v-if="filterParams.rangeShowFlag" style="text-align:center;">
+                                                    <el-col :span="24">
+                                                        <div style="margin:10px 0;height:50px;line-height: 50px;background-color: #fafafa;border: 1px solid #efefef;">
+                                                            <el-button type="primary" size="mini" :disabled="filterParams.conditionStatus" @click="showRange(false)">加载范围</el-button>
+                                                        </div>
+                                                    </el-col>
+                                                </el-row>
+                                                <el-row v-if="!filterParams.rangeShowFlag">
+                                                    <el-col :span="24">
+                                                        <div style="margin-top:10px;border: 1px solid #efefef;padding:20px 20px 0px 20px;">
+                                                            <el-form :label-position="labelPosition" label-width="60px" disabled="true" :model="filterParams.conditionFilter" size="small">
+                                                                <el-form-item label="最大值:"><el-input v-model="filterParams.conditionFilter.MAX"></el-input></el-form-item>
+                                                                <el-form-item label="最小值:"><el-input v-model="filterParams.conditionFilter.MIN"></el-input></el-form-item>
+                                                            </el-form>
+                                                        </div>
+                                                    </el-col>
+                                                </el-row>
+                                                <el-row>&nbsp;</el-row>
+                                                <el-row>
+                                                    <el-col :span="11">
+                                                        <el-select v-model="filterParams.operateKey" placeholder="请选择":disabled="filterParams.conditionStatus"  size="mini" @change="conditionFilterChange">
+                                                            <el-option v-for="opt in operates" :key="opt.key" :label="opt.text" :value="opt.key"></el-option>
+                                                        </el-select>
+                                                    </el-col>
+                                                    <el-col :span="1">&nbsp;</el-col>
+                                                    <el-col :span="11"><el-input v-model="filterParams.operateVal" size="mini" :disabled="filterParams.conditionStatus" @change="conditionFilterChange" placeholder="请输入数字"></el-input></el-col>
+                                                </el-row>
                                             </el-tab-pane>
                                             <el-tab-pane label="高级筛选" name="fourth">
-                                                
+                                                <el-row>
+                                                    <el-col :span="2">按照</el-col>
+                                                    <el-col :span="12">
+                                                        <el-select v-model="filterParams.measureColumnNameHigh" placeholder="请选择" size="mini" @change="measureColumnHighChange(data.metricColList)">
+                                                            <el-option v-for="item in data.metricColList" :key="item.COLUMN_NAME" :label="item.COLUMN_RENAME" :value="item.COLUMN_NAME">
+                                                            </el-option>
+                                                        </el-select>
+                                                    </el-col>
+                                                    <el-col :span="2">&nbsp;&nbsp;的</el-col>
+                                                    <el-col :span="8">
+                                                        <el-select v-model="filterParams.countMethodKeyHigh" :disabled="filterParams.highConditionStatus" size="mini" @change="measureColumnHighConditionChange">
+                                                            <el-option v-for="item in countMethodList" :key="item.key" :label="item.text" :value="item.key"></el-option>
+                                                        </el-select>
+                                                    </el-col>
+                                                </el-row>
+                                                <el-row>&nbsp;</el-row>
+                                                <el-row>
+                                                    <el-col :span="2">&nbsp;</el-col>
+                                                    <el-col :span="12">
+                                                        <el-select v-model="filterParams.operateHighKey" :disabled="filterParams.highConditionStatus" placeholder="请选择" size="mini" @change="measureColumnHighConditionChange">
+                                                            <el-option v-for="opt in operateMaxAndMin" :key="opt.key" :label="opt.text" :value="opt.key"></el-option>
+                                                        </el-select>
+                                                    </el-col>
+                                                    <el-col :span="2">&nbsp;&nbsp;的</el-col>
+                                                    <el-col :span="6">
+                                                        <el-input v-model="filterParams.operateHighVal" :disabled="filterParams.highConditionStatus" size="mini" @change="measureColumnHighConditionChange"></el-input>
+                                                    </el-col>
+                                                    <el-col :span="2">&nbsp;个</el-col>
+                                                </el-row>
                                             </el-tab-pane>
                                         </el-tabs>
                                     </el-col>
@@ -315,12 +424,12 @@ Vue.component('filter-component',{
                                                 <el-row :class="['dim-row-padding',filterParams.activeName=='third'?'dim-row-active':'']">
                                                     <el-col :span="1">&nbsp;</el-col>
                                                     <el-col :span="8">条件筛选:</el-col>
-                                                    <el-col :span="14"></el-col>
+                                                    <el-col :span="14">{{filterParams.termsText}}</el-col>
                                                 </el-row>
                                                 <el-row :class="['dim-row-padding',filterParams.activeName=='fourth'?'dim-row-active':'']">
                                                     <el-col :span="1">&nbsp;</el-col>
                                                     <el-col :span="8">高级筛选:</el-col>
-                                                    <el-col :span="14">无</el-col>
+                                                    <el-col :span="14">{{filterParams.highConditionFilterText}}</el-col>
                                                 </el-row>
                                                 <el-row>&nbsp;</el-row>
                                             </el-col>
@@ -328,7 +437,7 @@ Vue.component('filter-component',{
                                         </el-row>
                                         <el-row>
                                             <el-col :span="2">&nbsp;</el-col>
-                                            <el-col :span="22"><el-button type="success">保存设置</el-button></el-col>
+                                            <el-col :span="22"><el-button type="success" @click="doSaveFilter">保存设置</el-button></el-col>
                                         </el-row>
                                     </el-col>
                                 </el-row>
@@ -336,7 +445,7 @@ Vue.component('filter-component',{
                             <template v-else-if="type=='2' || type=='3'">
                                 <el-row class="el-filter-row">
                                     <el-col :span="24">
-                                        <el-radio-group v-model="filterParams.radioRange">
+                                        <el-radio-group v-model="filterParams.radioRange" @change="rangeTypeChange">
                                             <el-radio :label="1">范围</el-radio>
                                             <el-radio :label="2">最少</el-radio>
                                             <el-radio :label="3">最多</el-radio>
@@ -346,21 +455,25 @@ Vue.component('filter-component',{
                                 <el-row class="el-filter-row">
                                     <el-col :span="3">&nbsp;</el-col>
                                     <el-col :span="8">
-                                        <el-input v-model="filterParams.leftNum"></el-input>
+                                        <div v-if="type=='2'"><el-input v-model="filterParams.leftNum" :disabled="filterParams.leftNumDisabled"></el-input></div>
+                                        <div v-else>
+                                            <el-date-picker v-model="filterParams.beginTime" type="datetime" placeholder="选择日期时间" align="right" :picker-options="pickerOptions" :disabled="filterParams.beginTimeDisabled"></el-date-picker>
+                                        </div>
                                     </el-col>
                                     <el-col :span="2"><span style="height: 40px;line-height: 40px;padding:0 20px;"> - </span></el-col>
                                     <el-col :span="8">
-                                        <el-input v-model="filterParams.rightNum"></el-input>
+                                        <div v-if="type=='2'"><el-input v-model="filterParams.rightNum" :disabled="filterParams.rightNumDisabled"></el-input></div>
+                                        <div v-else><el-date-picker v-model="filterParams.endTime" type="datetime" placeholder="选择日期时间" align="right" :picker-options="pickerOptions" :disabled="filterParams.endTimeDisabled"></el-date-picker></div>
                                     </el-col>
                                     <el-col :span="3">&nbsp;</el-col>
                                 </el-row>
-                                <el-row class="el-filter-row">
-                                    <el-col :span="24"><el-button type="primary">加载范围</el-button></el-col>
+                                <el-row class="el-filter-row" v-if="type=='2' && filterParams.rangeShowFlag">
+                                    <el-col :span="24"><el-button type="primary" @click="showRange(true)">加载范围</el-button></el-col>
                                 </el-row>
                                 <el-row class="el-filter-row">
                                     <el-col :span="24">
-                                        <span style="margin-right:20px;"><el-button type="success">保存</el-button></span>
-                                        <span><el-button type="danger">重置</el-button></span>
+                                        <span style="margin-right:20px;"><el-button type="success" @click="saveRange">保存</el-button></span>
+                                        <span><el-button type="danger" @click="setRange">重置</el-button></span>
                                     </el-col>
                                 </el-row>
                             </template>
@@ -370,21 +483,241 @@ Vue.component('filter-component',{
                 </template>
               </div>`,
     methods: {
+        /**
+         * 获取表字段数据
+         * @param method :POST/GET
+         * @param api :请求api接口
+         * @param data ：请求数据和解析返回数据参数
+         */
+        loadTableColData:function(method,api,data){
+            let config = {};
+            if(data.params){
+                config['params'] = data.params;
+                delete data.params;
+            }
+            if(data.msgCfg){
+                config['msgCfg'] = data.msgCfg;
+                delete data.msgCfg;
+            }
+            let jsonDataList={
+                httpMethod:method,
+                url:api,
+                data:data?JSON.stringify(data):''
+            };
+            this.requestAsyncApi(jsonDataList,config);
+        },
+        /**
+         * 请求接口方法，附带解析返回参数
+         * @param jsonDataList 请求配置参数
+         * @param config ：{//返回解析参数
+         *      params{ //接收参数                                必填
+         *          T:{//泛型，指具体接收数据变量名                  必填
+         *              type:字段类型(array/string/object等)      必填
+         *              receive：接收解析数据变量名                 非必填
+         *          }
+         *      }
+         *      msgCfg{//自定义是否提示信息                        非必填
+         *          show:是否显示                                非必填
+         *          msg:具体的提示信息                            非必填
+         *      }
+         * }
+         */
+        requestAsyncApi:function(jsonDataList,config){
+            let me = this;
+            let params = config.params;
+            let msgCfg = config.msgCfg;
+            ajaxrequestasync(jsonDataList,function(code,msg,json){
+                if(code=='200'){
+                    let body = json.body || json;
+                    if(body){
+                        for(let p in params){
+                            let resultParams = params[p];
+                            let defaultData = me.dataTyeByStr(resultParams.type);
+                            if(resultParams.receive && resultParams.receive!=''){
+                                me[p] = body[resultParams.receive] || defaultData;
+                            }else{
+                                me[p] = body || defaultData;
+                            }
+                        }
+                    }
+                    if(msgCfg && msgCfg.show){
+                        me.myMessage(msgCfg.msg||msg,'success');
+                    }
+                }else{
+                    msg = msgCfg?(msgCfg.msg||msg):msg;
+                    me.myMessage(msg,'error');
+                }
+            });
+        },
+        requestSyncApi:function(method,api,data){
+            let jsonDataList={
+                httpMethod:method,
+                url:api,
+                data:data?JSON.stringify(data):''
+            };
+            return ajaxrequestsync(jsonDataList);
+        },
+        dataTyeByStr:function(s){
+            let dataType;
+            switch (s){
+                case 'string':dataType='';break;
+                case 'object':dataType={};break;
+                case 'array':dataType=[];break;
+                default:dataType='';break;
+            }
+            return dataType;
+        },
+        /**
+         * msg：提示信息
+         * type：消息类型：success：成功；error：错误；warning：警告；
+         * */
+        myMessage:function(msg,type) {
+            this.$message({
+                message: msg,
+                type: type
+            });
+        },
         getCurrentRow:function (e) {
-            debugger;
-            let init = true;
+            // this.initParams();
+            this.measures=this.data.metricColList;
+            this.dimensions=this.data.dimensionColList;
             let row = e.row;
-            this.pkey = row.ID;
             this.name = row.COLUMN_NAME;
             this.rename = row.COLUMN_RENAME;
             this.type = row.COLUMN_TYPE;
+            this.filterParams.focusColumn = row.COLUMN_NAME;
             //维度：1（时间：3）,度量：2
             if(row.COLUMN_TYPE=="1"){
-                this.type = this.colDataTypeToFilterType(row.COLUMN_DATA_TYPE)
-            }else{
-
+                this.type = this.colDataTypeToFilterType(row.COLUMN_DATA_TYPE);
+                let result = this.requestSyncApi('POST',configpre.api_getColnameData,{
+                    colName:row.COLUMN_NAME,
+                    modelId:row.MODEL_ID
+                });
+                if(result && result.code==200){
+                    this.columnData = result.json.body;
+                }
             }
-            this.initParams(init);
+            this.setColFilterParams(row);
+        },
+        setColFilterParams:function(row){
+            let me = this;
+            let result = this.requestSyncApi('POST',configpre.map_loadGisRelationConditionsByColNameAndRelationId,{
+                modelRelationId:row.MODEL_ID,
+                colName:row.COLUMN_NAME,
+            });
+            if(result && result.code==200){
+                let body = result.json.body;
+                if(body){
+                    this.pkey = body.pkey;
+                    let conditionsObj = eval(body.conditionsObj) ||[];
+                    if(me.type=="1"){
+                        this.initFirstActive(conditionsObj[0]);
+                        this.initSecondActive(conditionsObj[1]);
+                        this.initThirdActive(conditionsObj[2]);
+                        this.initFourthActive(conditionsObj[3]);
+                    }else{
+                        this.initFiveActive(conditionsObj[4]);
+                    }
+                }
+            }
+        },
+        initFirstActive:function(firstActive){
+            if(firstActive && firstActive.length>0){
+                this.filterParams.listRadio = parseInt(firstActive[0].listRadio);
+                if(this.filterParams.listRadio==1){
+                    this.filterParams.operateRadio = firstActive[0].operator;
+                    this.filterParams.checkList = firstActive[0].value;
+                    this.checkVal();
+                }else{
+                    if(firstActive[0].operator=='notin'){
+                        this.filterParams.operateChecked = true;
+                    }
+                    firstActive[0].value.forEach(item=>{
+                        this.filterParams.definedData.push({VAL: item});
+                    });
+                    this.inOrOutInputVal();
+                }
+            }
+        },
+        initSecondActive:function(secondActive){
+            if(secondActive && secondActive.length>0){
+                let len = this.bodyOptions.length;
+                let topSelectVal = secondActive[0].topSelectVal;
+                secondActive.forEach(item=>{
+                    for(let i=0;i<len;i++){
+                        if(item.operator==this.bodyOptions[i].code){
+                            this.filterParams.contentTexts.push({key: this.bodyOptions[i].key, text: item.value[0]});
+                        }
+                    }
+                });
+                this.filterParams.topSelectVal = topSelectVal;
+                this.andOrChange();
+            }
+        },
+        initThirdActive:function(thirdActive){
+            if(thirdActive && thirdActive.length>0){
+                this.filterParams.measureColumnName=thirdActive[0].originColumnName;
+                if(thirdActive[0].name.match('SUM')){
+                    this.filterParams.countMethodKey='1';
+                }else if(thirdActive[0].name.match('AVG')){
+                    this.filterParams.countMethodKey='2';
+                }else if(thirdActive[0].name.match('MAX')){
+                    this.filterParams.countMethodKey='3';
+                }else if(thirdActive[0].name.match('MIN')){
+                    this.filterParams.countMethodKey='4';
+                }
+                this.operates.forEach(item=>{
+                    if(item.code==thirdActive[0].operator){
+                        this.filterParams.operateKey = item.key;
+                    }
+                });
+                this.filterParams.operateVal = thirdActive[0].value[0];
+                this.filterParams.conditionStatus = false;
+                this.filterParams.highConditionStatus=false;
+                this.filterParams.measureColumnRName = thirdActive[0].measureColumnRName;
+                this.conditionFilterChange();
+            }
+        },
+        initFourthActive:function(fourthActive){
+            if(fourthActive && fourthActive.length>0){
+                this.filterParams.measureColumnNameHigh = fourthActive[0].originColumnName;
+                if(fourthActive[0].name.match('SUM')){
+                    this.filterParams.countMethodKeyHigh='1';
+                }else if(fourthActive[0].name.match('AVG')){
+                    this.filterParams.countMethodKeyHigh='2';
+                }else if(fourthActive[0].name.match('MAX')){
+                    this.filterParams.countMethodKeyHigh='3';
+                }else if(fourthActive[0].name.match('MIN')){
+                    this.filterParams.countMethodKeyHigh='4';
+                }
+                this.filterParams.highConditionStatus=false;
+                this.operateMaxAndMin.forEach(item=>{
+                    if(item.code==fourthActive[0].operator){
+                        this.filterParams.operateHighKey = item.key;
+                    }
+                });
+                this.filterParams.operateHighVal=fourthActive[0].value;
+                this.filterParams.measureColumnName = fourthActive[0].originColumnName;
+                this.filterParams.conditionStatus = false;
+                this.filterParams.measureColumnRNameHigh = fourthActive[0].measureColumnRNameHigh;
+                this.measureColumnHighConditionChange();
+            }
+        },
+        initFiveActive:function(fiveActive){
+            if(fiveActive && fiveActive.length>0){
+                this.filterParams.radioRange = parseInt(fiveActive[0].radioRange);
+                let colType = fiveActive[0].colType;
+                if(colType=='2'){
+                    this.filterParams.leftNum=fiveActive[0].value[0];
+                    this.filterParams.rightNum=fiveActive[0].value[1];
+                }else{
+                    this.filterParams.beginTime=fiveActive[0].value[0];
+                    this.filterParams.endTime=fiveActive[0].value[1];
+                }
+                if(fiveActive[0].value[0] || fiveActive[0].value[1]){
+                    this.installRange();
+                }
+            }
         },
         /**
          * 字段类型转
@@ -403,13 +736,51 @@ Vue.component('filter-component',{
             }
             return filterType;
         },
-        initParams:function(init){
-            if(init){
-                this.filterParams.activeName='first';
-                this.filterParams.radioRange=1;
-                this.filterParams.leftNum='';
-                this.filterParams.rightNum='';
-            }
+        initParams:function(){
+            this.filterParams.activeName='first';
+            this.filterParams.listRadio=1;
+            this.filterParams.listRadioOrderAsc=true;
+            this.filterParams.searchColumnData='';
+            this.filterParams.hoverIndex= -1;
+            this.filterParams.checkList=[];
+            this.filterParams.definedData= [];
+            this.filterParams.operateRadio='in';
+            this.filterParams.radioRange=1;
+            this.filterParams.leftNum='';
+            this.filterParams.rightNum='';
+            this.filterParams.beginTime='';
+            this.filterParams.endTime='';
+            this.filterParams.leftNumDisabled=false;
+            this.filterParams.rightNumDisabled=false;
+            this.filterParams.beginTimeDisabled=false;
+            this.filterParams.endTimeDisabled=false;
+            this.filterParams.listItemText= '无';
+            this.filterParams.installContentText='无';
+            this.filterParams.termsText= '无';
+            this.filterParams.highConditionFilterText='无';
+            this.filterParams.addVal='';
+            this.filterParams.operateChecked=false;
+            this.filterParams.topSelectVal= '1';
+            this.filterParams.contentTexts= [];
+            this.filterParams.measureColumnName='';
+            this.filterParams.measureColumnRName= '';
+            this.filterParams.rangeShowFlag=true;
+            this.filterParams.countMethodKey= '1';
+            this.filterParams.operateVal= '';
+            this.filterParams.operateKey= '1';
+            this.filterParams.conditionFilter={MAX:0,MIN:0};
+            this.filterParams.conditionStatus=true;
+            this.filterParams.measureColumnNameHigh='';
+            this.filterParams.countMethodKeyHigh='1';
+            this.filterParams.operateHighKey='1';
+            this.filterParams.operateHighVal='';
+            this.filterParams.measureColumnRNameHigh = '';
+            this.filterParams.highConditionStatus=true;
+            this.filterParams.focusColumn = '';
+            this.conditionObjs=[];
+            this.conditions=[];
+            this.pkey = '';
+
         },
         orderClick:function(){
             let me = this;
@@ -423,12 +794,6 @@ Vue.component('filter-component',{
                     return VAL2.localeCompare(VAL1, 'zh');
                 }
             });
-        },
-        changeListRadio:function(){
-            if(this.filterParams.listRadio=='1'){
-
-            }
-
         },
         checkVal: function (index) {
             var operateRadio = '';
@@ -446,9 +811,11 @@ Vue.component('filter-component',{
                     name: this.name,
                     operator: 'in',
                     type: 's',
+                    conditionType:1,
+                    listRadio:1,
                     value: this.filterParams.checkList
                 }];
-                this.installCondition('1', params);
+                this.installCondition('0', params);
                 this.filterParams.listItemText = operateRadio;
                 return;
             }
@@ -466,9 +833,11 @@ Vue.component('filter-component',{
                     name: this.name,
                     operator: this.filterParams.operateRadio,
                     type: 's',
+                    conditionType:1,
+                    listRadio:1,
                     value: this.filterParams.checkList
                 }];
-                this.installCondition('1', params);
+                this.installCondition('0', params);
             } else {
                 this.filterParams.listItemText = '无';
             }
@@ -499,11 +868,12 @@ Vue.component('filter-component',{
                     name: this.name,
                     operator: this.filterParams.operateRadio == 'all' ? 'in' : this.filterParams.operateRadio,
                     type: 's',
+                    conditionType:1,
                     value: this.filterParams.checkList
                 }];
-                this.installCondition('1', params);
+                this.installCondition('0', params);
             } else {
-                this.removeCondition('1');
+                this.removeCondition('0');
             }
         },
         //列表筛选：手动radio，输入值内容添加至数据集合中
@@ -532,7 +902,7 @@ Vue.component('filter-component',{
                 this.inOrOutInputVal();
             } else {
                 this.filterParams.listItemText = '无';
-                this.removeCondition('1');
+                this.removeCondition('0');
             }
         },
         operateCheckedChange:function(){
@@ -567,9 +937,11 @@ Vue.component('filter-component',{
                 name: this.name,
                 operator: operate,
                 type: 's',
+                listRadio:'2',
+                conditionType:1,
                 value: vals
             }];
-            this.installCondition('1', params);
+            this.installCondition('0', params);
         },
         changeListRadio:function(){
             if(this.filterParams.listRadio == '1') {
@@ -585,7 +957,7 @@ Vue.component('filter-component',{
         },
         /**
          *组装查询条件
-         *@param tabType 1：列表查询2：文本帅选3：条件筛选4：高级筛选 5：度量范围6：时间
+         *@param tabType 0：列表查询，1：文本帅选，2：条件筛选，3：高级筛选，4：度量范围，5：时间
          *@param column:字段名
          *@param operator：in，like，eq，ne等
          *@param type:字段类型 s 字符串, i 整形, l 长整型 ,d 浮点型 保留4位小数, t 时间类型
@@ -601,6 +973,7 @@ Vue.component('filter-component',{
             }
             this.conditions = condtions;
             console.info(JSON.stringify(this.conditions));
+            console.info(JSON.stringify(this.conditionObjs));
         },
         removeCondition: function (tabType) {
             delete this.conditionObjs[tabType];
@@ -611,6 +984,7 @@ Vue.component('filter-component',{
                 }
             }
             this.conditions = condtions;
+
             console.info(JSON.stringify(this.conditions));
         },
         andOrChange:function(){
@@ -626,10 +1000,12 @@ Vue.component('filter-component',{
                     if (contentText.text != '') {
                         existText = true;
                         var cfgs = {
-                            name: this.columnNameFilter,
+                            name: this.name,
                             operator: operateCfg.key,
+                            topSelectVal:this.filterParams.topSelectVal,
                             type: 's',
-                            value: contentText.text,
+                            conditionType:1,
+                            value: [contentText.text],
                             both: isAndOrKey
                         }
                         //判断当前元素的下一元素的值是否为空，为空删除both属性，反之不删除
@@ -642,12 +1018,12 @@ Vue.component('filter-component',{
                 }
                 if (existText) {
                     this.filterParams.installContentText = this.filterParams.installContentText.substring(0, this.filterParams.installContentText.length - 2);
-                    this.installCondition('2', params);
+                    this.installCondition('1', params);
                 } else {
                     this.filterParams.installContentText = '无';
                 }
             } else {
-                this.removeCondition('2');
+                this.removeCondition('1');
             }
         },
         addSelectInput: function () {
@@ -699,7 +1075,11 @@ Vue.component('filter-component',{
                     }
                 }
             }
-            // this.conditionFilterChange();
+            if(this.filterParams.measureColumnRName!=''){
+                this.filterParams.conditionStatus = false;
+                this.filterParams.highConditionStatus=false;
+            }
+            this.conditionFilterChange();
         },
         conditionFilterChange : function () {
             var vals = [];
@@ -709,7 +1089,7 @@ Vue.component('filter-component',{
             var expressConditionFilter = "";
             var expressConditionFilterText = "";
             if(this.filterParams.operateVal == 0 ||this.filterParams.operateVal == ""){
-                this.removeCondition('3');
+                this.removeCondition('2');
                 this.filterParams.termsText = '无';
             }
             if(this.filterParams.operateKey && this.filterParams.operateVal){
@@ -760,11 +1140,13 @@ Vue.component('filter-component',{
                     name: expressConditionFilter+'(' + this.filterParams.measureColumnName+')',
                     operator: operate,
                     measureColumnRName:this.filterParams.measureColumnRName,
+                    originColumnName:this.filterParams.measureColumnName,
                     type: 'd',
+                    conditionType:2,
                     value: vals
                 }];
                 this.filterParams.termsText = expressConditionFilterText+'('+this.filterParams.measureColumnRName+')'+operateSymbol+this.filterParams.operateVal;
-                this.installCondition('3', params);
+                this.installCondition('2', params);
             }
 
         },
@@ -806,5 +1188,228 @@ Vue.component('filter-component',{
             }
             return resultTemp;
         },
+        showRange: function (defaultType) {
+            if(defaultType){
+                this.requestMeasureParams();
+            }else {
+                this.filterParams.rangeShowFlag = false;
+                this.requestMeasureParams(this.transformCountMethodExpress(this.filterParams.countMethodKey));
+            }
+        },
+        requestMeasureParams:function(rangResult){
+            let focusColumn = this.filterParams.focusColumn;
+            let col,id,columnName;
+            if(rangResult && rangResult.express){
+                focusColumn = this.filterParams.measureColumnName;
+                columnName = rangResult.express+"_"+focusColumn;
+            }
+            for(let i=0,len=this.measures.length;i<len;i++){
+                if(this.measures[i].COLUMN_NAME==focusColumn){
+                    columnName = columnName || focusColumn;
+                    id = this.measures[i].MODEL_ID;
+                    col ={
+                        COLUMN_DATA_TYPE:this.measures[i].COLUMN_DATA_TYPE,
+                        COLUMN_NAME:columnName,
+                        COLUMN_ORIGINAL_NAME:this.measures[i].COLUMN_NAME,
+                        COLUMN_RNAME:this.measures[i].COLUMN_RNAME,
+                        ORIGINAL_NAME:this.measures[i].COLUMN_NAME,
+                    };
+                    break;
+                }
+            }
+            if(!col){
+                this.myMessage('获取范围异常，请联系管理员','warning');
+                return;
+            }
+            let requestParams = {
+                ID:id,
+                cols:[col],
+                filters:columnName,
+                conditions:[],
+                groupBy:[]
+            }
+            this.loadMeasureRange(requestParams);
+        },
+        //获取度量范围
+        loadMeasureRange: function (requestParams) {
+            let me = this;
+            if (requestParams !== '') {
+                let jsonDataList = {
+                    httpMethod: 'POST',
+                    url: configpre.api_getTableDataMixInfo,
+                    data: JSON.stringify(requestParams),
+                };
+                ajaxrequestasync(jsonDataList, function (code, msg, json) {
+                    if (code == '200') {
+                        me.filterParams.conditionFilter.MAX = json.maxVal;
+                        me.filterParams.conditionFilter.MIN = json.minVal;
+                        me.filterParams.leftNum=json.minVal;
+                        me.filterParams.rightNum=json.maxVal;
+                    }
+                });
+            }
+        },
+        measureColumnHighChange:function(measures){
+            if(measures && measures.length>0){
+                for(var sindex=0,len=measures.length;sindex<len;sindex++){
+                    if(measures[sindex].COLUMN_NAME == this.filterParams.measureColumnNameHigh){
+                        this.filterParams.measureColumnName = measures[sindex].COLUMN_NAME;
+                        this.filterParams.measureColumnRNameHigh = measures[sindex].COLUMN_RENAME;
+                        break;
+                    }
+                }
+                if(this.filterParams.measureColumnRNameHigh!=''){
+                    this.filterParams.conditionStatus = false;
+                    this.filterParams.highConditionStatus=false;
+                }
+                this.measureColumnHighConditionChange();
+            }
+        },
+        measureColumnHighConditionChange:function(){
+            var vals = '';
+            var operateHigh = '';
+            var operateHighText = '';
+            var operateHighSymbol = '';
+
+            var expressHighConditionFilter = "";
+            var expressHighConditionFilterText = "";
+            if(this.filterParams.operateHighKey && this.filterParams.operateHighVal){
+                var rangHighResult = this.transformCountMethodExpress(this.filterParams.countMethodKeyHigh);
+                if(rangHighResult && rangHighResult.express && rangHighResult.expressText){
+                    expressHighConditionFilter = rangHighResult.express;
+                    expressHighConditionFilterText = rangHighResult.expressText;
+                }
+                vals = this.filterParams.operateHighVal;
+
+                switch (this.filterParams.operateHighKey) {
+                    case "1":
+                        operateHigh = 'le';
+                        operateHighText = '最大';
+                        operateHighSymbol = '<=';
+                        break;
+                    case "2":
+                        operateHigh = 'ge';
+                        operateHighText = '最小';
+                        operateHighSymbol = '>=';
+                        break;
+                    default:
+                        operateHigh = 'le';
+                        operateHighText = '最大';
+                        operateHighSymbol = '<=';
+                }
+                var params = [{
+                    name: expressHighConditionFilter+'(' + this.filterParams.measureColumnName+')',
+                    rename: expressHighConditionFilter+'_' + this.filterParams.measureColumnNameHigh,
+                    operator: operateHigh,
+                    measureColumnRNameHigh:this.filterParams.measureColumnRNameHigh,
+                    originColumnName:this.filterParams.measureColumnName,
+                    highFilter:true,
+                    type: 'd',
+                    conditionType:3,
+                    value: vals
+                }];
+                this.filterParams.highConditionFilterText = '按照'+expressHighConditionFilterText+'('+this.filterParams.measureColumnRNameHigh+')'+'方式取'+operateHighText+this.filterParams.operateHighVal+'项';
+                this.installCondition('3', params);
+            }
+        },
+        rangeTypeChange:function(){
+            if(this.filterParams.radioRange=='1'){
+                this.setDisableStatus(false,false);
+            }else if(this.filterParams.radioRange=='2'){
+                this.setDisableStatus(false,true);
+            }else if(this.filterParams.radioRange=='3'){
+                this.setDisableStatus(true,false);
+            }
+        },
+        setDisableStatus:function(status1,status2){
+            if(this.type=='2'){
+                this.filterParams.leftNumDisabled = status1;
+                this.filterParams.rightNumDisabled = status2;
+            }else if(this.type=='3'){
+                this.filterParams.beginTimeDisabled = status1;
+                this.filterParams.endTimeDisabled = status2;
+            }
+        },
+        setRange:function(){
+            this.filterParams.rangeShowFlag = true;
+            if(this.type=='2'){
+                this.filterParams.leftNum = '';
+                this.filterParams.rightNum = '';
+            }else if(this.type=='3'){
+                this.filterParams.beginTime = '';
+                this.filterParams.endTime = '';
+            }
+        },
+        installRange:function(){
+            let operate,vals,rangeValL,rangeValR,tableIndex;
+            if(this.type=='2'){
+                rangeValL= this.filterParams.leftNum;
+                rangeValR = this.filterParams.rightNum;
+                tableIndex = '4';
+            }else if(this.type=='3'){
+                rangeValL = this.filterParams.beginTime;
+                rangeValR = this.filterParams.endTime;
+                tableIndex = '5';
+            }
+            if (this.filterParams.radioRange == '1') {
+                if(rangeValL=='' || rangeValR==''){
+                    this.myMessage('请设置数据','warning');
+                    return;
+                }
+                operate = 'between';
+                vals = [rangeValL, rangeValR];
+            } else if (this.filterParams.radioRange == '2') {
+                if(rangeValL==''){
+                    this.myMessage('请设置数据','warning');
+                    return;
+                }
+                operate = 'ge';
+                vals = [rangeValL];
+            } else {
+                if(rangeValR==''){
+                    this.myMessage('请设置数据','warning');
+                    return;
+                }
+                operate = 'le';
+                vals = [rangeValR];
+            }
+            var objItem = [{
+                name: this.filterParams.focusColumn,
+                operator: operate,
+                type: 'd',
+                radioRange:this.filterParams.radioRange,
+                colType:this.type,
+                value: vals
+            }];
+            this.installCondition(tableIndex, objItem);
+        },
+        saveRange:function(){
+            this.installRange();
+            this.doSaveFilter();
+        },
+        doSaveFilter:function(){
+            if(this.conditions && this.conditions.length>0){
+                let cfgs = {
+                    pkey:this.pkey,
+                    colName:this.filterParams.focusColumn,
+                    conditionObjs:this.conditionObjs,
+                    conditions:this.conditions,
+                    modelRelationId:this.data.modelRelationId
+                }
+                let config = {
+                    params:{pkey:{type:''}},
+                    msgCfg:{show:true}
+                };
+                let jsonDataList={
+                    httpMethod:'POST',
+                    url:configpre.map_saveGisRelationConditions,
+                    data:JSON.stringify(cfgs)
+                };
+                this.requestAsyncApi(jsonDataList,config);
+            }else{
+                this.myMessage('请设置过滤条件','warning');
+            }
+
+        }
     }
 });

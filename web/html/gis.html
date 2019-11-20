@@ -437,7 +437,7 @@
                                 <el-button @click="openSetFloatDialog" size="mini">悬浮框设置</el-button>
                             </template>
                         </div>
-                        <el-table ref="multipleTable" :data="tableDatas" @selection-change="handleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
+                        <el-table ref="multipleTable" :data="tableDatas" @selection-change="handleStyleSelectionChange" tooltip-effect="dark" border style="width: 100%" size="mini" max-height="320">
                             <el-table-column type="selection" width="35"></el-table-column>
                             <el-table-column label="名称">
                                 <template slot-scope="scope">{{ scope.row.REGION }}</template>
@@ -724,7 +724,6 @@ var mapVue=  new Vue({
                 let width = this.$refs.mymap.offsetWidth;
                 //384为1920宽的20%大小,且为抽屉效果的最小宽度
                 let percent = 384/width;
-                console.info(width+','+percent);
                 if(percent>0.2){
                     this.size=parseInt(percent*100)+'%';
                 }
@@ -806,7 +805,7 @@ var mapVue=  new Vue({
                         this.carourselData(body);
                         break;
                     case '2':
-                        this.carourselHeatMap(body)
+                        this.carourselHeatMap(body);
                         break;
                     case '3':
                         this.cleanMapData();
@@ -836,6 +835,7 @@ var mapVue=  new Vue({
                 }
             },
             showNameList:function(data){
+                this.showBottomRight = [];
                 if(!data || data.length==0){
                     return;
                 }
@@ -885,7 +885,6 @@ var mapVue=  new Vue({
                 if(!body.data || body.data.length==0){
                     return;
                 }
-
                 let bodyData = body.data;
                 let carouselNames = body.names||[];
                 let group=[];
@@ -901,11 +900,11 @@ var mapVue=  new Vue({
                     carouselNames.forEach(item=>{
                         let cfgs = {
                             carouselName:el+item
-                        }
+                        };
                         mapVue.carouselNames.push(cfgs);
                     });
                     let data = bodyData[el]||[];
-                    mapVue.showNameList(data);
+                    mapVue.showNameList(data[0].data);
                     data.forEach(item=>{
                         let itemData = item.data;
                         let cfgs = {};
@@ -925,7 +924,7 @@ var mapVue=  new Vue({
                     if(i==group.length-1){
                         i=0;
                     }else{
-                        i++
+                        i++;
                     }
                 }
             },
