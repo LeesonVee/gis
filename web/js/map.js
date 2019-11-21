@@ -199,6 +199,7 @@ function addEvent(jsonAreaCode,map){
     });
 }
 function pointermoveMap(element,map){
+    let me = this;
     var converLayer = this.converLayer;
     var featureOverlay = this.featureOverlay(map);
     //地图绑定鼠标滑过事件
@@ -206,17 +207,74 @@ function pointermoveMap(element,map){
         me.highlight = me.pointerMove(evt,converLayer,featureOverlay,me.highlight,map);
     });
 }
+/**
+ * 判断是否在圆形内
+ * @param p
+ * @param c
+ * @param r
+ * @return boolean
+ */
+function distencePC(p,c,r){//判断点与圆心之间的距离和圆半径的关系
+    let d2 = Math.hypot((p[0] - c[0]), (p[1] - c[1]));
+    if(d2>r/100000000){
+        return false;
+    }else{
+        return true;
+    }
+}
+/**
+ * 根据当前地图缩放等级，转换圆的半径大小
+ * @param map
+ * @returns {*}
+ */
+function getRadius(map){
+    let radius;
+    let zoom = map.getView().getZoom();
+    switch (parseInt(zoom)){
+        case 1:radius=624000000;break;
+        case 2:radius=312000000;break;
+        case 3:radius=156000000;break;
+        case 4:radius=78000000;break;
+        case 5:radius=39000000;break;
+        case 6:radius=19200000;break;
+        case 7:radius=9600000;break;
+        case 8:radius=4800000;break;
+        case 9:radius=2400000;break;
+        case 10:radius=1200000;break;
+        case 11:radius=600000;break;
+        case 12:radius=303000;break;
+        case 13:radius=180000;break;
+        case 14:radius=110000;break;
+        case 15:radius=50000;break;
+        case 16:radius=25000;break;
+        case 17:radius=10000;break;
+        case 18:radius=6000;break;
+        case 19:radius=3000;break;
+        case 20:radius=1000;break;
+        case 21:radius=500;break;
+        case 22:radius=250;break;
+        case 23:radius=135;break;
+        case 24:radius=70;break;
+        case 25:radius=45;break;
+        case 26:radius=18;break;
+        case 27:radius=9;break;
+        case 28:radius=6;break;
+        default:radius=1;break;
+    }
+    return radius;
+}
 function pointerMoveSetXY(element,map){
     map.on(element, function (evt) {
-        var point = evt.pixel;
+        let point = evt.pixel;
+        let radius = getRadius(map);
         if(typeof(mapVue)!=='undefined'){
-            var coordinate;
-            var coordinateData = mapVue.allFloatDialogData;
-            for(var p in coordinateData){
-                var arry = JSON.parse(p);
-                console.info((evt.coordinate[0]-arry[0])*1000);
-                console.info((evt.coordinate[1]-arry[1])*1000);
-                if(Math.abs(evt.coordinate[0]-arry[0])*10000<9 && Math.abs(evt.coordinate[1]-arry[1])*10000<9){
+            let coordinate;
+            let coordinateData = mapVue.allFloatDialogData;
+            if(!coordinateData || coordinateData.length==0){
+                return;
+            }
+            for(let p in coordinateData){
+                if(distencePC(evt.coordinate,JSON.parse(p),radius)){
                     coordinate=p;
                 }
             }
@@ -228,7 +286,6 @@ function pointerMoveSetXY(element,map){
             }else{
                 mapVue.floatDialog = false;
             }
-
         }
     });
 }
@@ -1874,7 +1931,7 @@ function htmlCode(pkey){
         +'	                        apiPath = configpre.map_queryHeatMapDataByGisModelRelation;'
         +'	                        break;'
         +'	                    case \'3\':'
-        +'	                        this.loadDialogDataByRelation(params);'
+        +'	                        this.loadDialogDataByRelation(row);'
         +'	                        break;'
         +'	                }'
         +'	                if(this.checkCarousel(params.modelRelation)){'
